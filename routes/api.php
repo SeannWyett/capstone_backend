@@ -1,13 +1,13 @@
 <?php
 
 use Illuminate\Http\Request;
-use App\Http\Controllers\Auth\AuthenticatedSessionController;
+use App\Http\Controllers\Auth\ApiLoginController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaperController;
 
-Route::post('/login', [AuthenticatedSessionController::class, 'store']);
-Route::post('/logout', [AuthenticatedSessionController::class, 'destroy']);
+Route::post('/login', [ApiLoginController::class, 'login']);
+Route::post('/logout', [ApiLoginController::class, 'logout']);
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
         return $request->user();
