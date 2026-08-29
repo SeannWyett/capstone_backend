@@ -22,12 +22,12 @@ return new class extends Migration
             $table->string('original_filename');
             $table->unsignedBigInteger('file_size')->nullable();
             $table->integer('year');
-            $table->string('campus', 255);
-            $table->string('department', 255);
-            $table->string('course', 255);
-            // $table->foreignId('campus_id')->constrained('campuses')->cascadeOnDelete();
-            // $table->foreignId('department_id')->constrained('departments')->cascadeOnDelete();
-            // $table->foreignId('program_id')->constrained('programs')->cascadeOnDelete();
+            // $table->string('campus', 255);
+            // $table->string('department', 255);
+            // $table->string('course', 255);
+            $table->foreignId('campus_id')->constrained('campuses')->cascadeOnDelete();
+            $table->foreignId('department_id')->constrained('departments')->cascadeOnDelete();
+            $table->foreignId('program_id')->constrained('programs')->cascadeOnDelete();
             // $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
             $table->integer('views_count')->default(0);
             $table->string('researchers');
