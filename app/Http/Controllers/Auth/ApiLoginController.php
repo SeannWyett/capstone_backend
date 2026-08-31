@@ -23,7 +23,8 @@ class ApiLoginController extends Controller
 
         $user = Auth::user();
 
-        $token = $user->createToken('api-token')->plainTextToken;
+        $token = $user->createToken('api-token', ['*'], now()->addDays(7))->plainTextToken;
+
 
         return response()->json([
             'message' => 'Login successful',
