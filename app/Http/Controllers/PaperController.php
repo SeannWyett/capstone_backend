@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\PaperUploads;
 use App\Http\Requests\StorePaperRequest;
+use App\Services\HandlesPapersUploads;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 
@@ -28,19 +29,19 @@ class PaperController extends Controller
 
         //filtering by campus, department, course, year, and paper_type
         if ($request->filled('campus')) {
-            $query->where('campus', $request->campus);
+            $query->where('campus', $request->campus_id);
         }
         if ($request->filled('department')) {
-            $query->where('department', $request->department);
+            $query->where('department', $request->department_id);
         }
         if ($request->filled('course')) {
-            $query->where('course', $request->course);
+            $query->where('course', $request->course_id);
         }
         if ($request->filled('year')) {
             $query->where('year', $request->year);
         }
         if ($request->filled('paper_type')) {
-            $query->where('paper_type', $request->paper_typex);
+            $query->where('paper_type', $request->paper_type);
         }
 
         return $query;
@@ -88,8 +89,8 @@ class PaperController extends Controller
         //     ->with('category:id,name') // Eager load the category relationship to get the name
         //     ->get();
 
-        $papersByBulan = PaperUploads::where('campus', 'Bulan')->count();
-        
+        $papersByBulan = PaperUploads::where('campus_id', 1)->count(); // Replace 1 with the actual campus_id for Bulan
+
         // $mostViewedPapers = PaperUploads::orderBy('views_count', 'desc')
         //     ->take(5)
         //     ->get();
@@ -104,24 +105,27 @@ class PaperController extends Controller
         ]);
     }
 
-    public function store(StorePaperRequest $request)
+    public function store(StorePaperRequest $request, HandlesPapersUploads $uploader)
     {
-        $file = $request->file('file');
-
-        $campus = $request->input('campus');
-        $department = $request->input('department');
-        $course = $request->input('course');
-
-        $folderPath = sprintf('papers/%s/%s/%s', $campus, $department, $course);
-        $path = $file->store($folderPath, 'public'); // Store the file in the specified  directory of the public disk
 
         $validated = $request->validated();
-        $validated['file_url'] = $path;
-        $validated['original_filename'] = $file->getClientOriginalName();
-        $validated['file_size'] = $file->getSize();
+        $file = $request->file('file');
 
-        // Create a new PaperUploads record
-        $paperUpload = PaperUploads::create($validated);
+        $filedata = $uploader->storefile(
+            $file,
+            $validated['campus'],
+            $validated['department'],
+            $validated['course']
+        );
+
+        try {
+            $paperUpload = PaperUploads::create(array_merge($validated, $filedata));
+        } catch (\Exception $e) {
+            // If there's an error during the database operation, delete the uploaded file
+            Storage::disk('public')->delete($filedata['file_url']);
+            return response()->json(['message' => 'Failed to upload paper', 'error' => $e->getMessage()], 500);
+        }
+
 
         return response()->json(['message' => 'Paper uploaded successfully', 'data' => $paperUpload], 201);
     }
