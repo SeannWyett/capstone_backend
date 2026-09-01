@@ -89,7 +89,7 @@ class PaperController extends Controller
         //     ->with('category:id,name') // Eager load the category relationship to get the name
         //     ->get();
 
-        $papersByBulan = PaperUploads::where('campus_id', 1)->count(); // Replace 1 with the actual campus_id for Bulan
+        $papersByBulan = PaperUploads::where('campus', 1)->count(); // Replace 1 with the actual campus_id for Bulan
 
         // $mostViewedPapers = PaperUploads::orderBy('views_count', 'desc')
         //     ->take(5)
