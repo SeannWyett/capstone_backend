@@ -19,6 +19,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     Route::get('/papers/thesis/{id}', [PaperController::class, 'show']);
     Route::get('/papers/capstone/{id}', [PaperController::class, 'show']);
     Route::get('/papers/{id}', [PaperController::class, 'show']);
+    Route::get('/papers/{paperUpload}/file', [PaperController::class, 'viewFile']);
 
     
     Route::middleware('auth:sanctum')->group(function () {
