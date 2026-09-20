@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\PaperUploads;
+use App\Models\PaperViews;
 use App\Http\Requests\StorePaperRequest;
 use App\Services\HandlesPapersUploads;
 use Illuminate\Support\Facades\Storage;
@@ -20,22 +21,22 @@ class PaperController extends Controller
             $search = $request->search;
 
             $query->where(function ($query) use ($search) {
-                $query->where('title', 'like', "%{$search}%")
-                        ->orWhereHas('category', function ($query) use ($search) {
-                            $query->where('name', 'like', "%{$search}%");
-                        });
+                $query->where('title', 'like', "%{$search}%");
+                        // ->orWhereHas('category', function ($query) use ($search) {
+                        //     $query->where('name', 'like', "%{$search}%");
+                        // });
             });
         }
 
         //filtering by campus, department, course, year, and paper_type
-        if ($request->filled('campus')) {
-            $query->where('campus', $request->campus_id);
+        if ($request->filled('campus_id')) {
+            $query->where('campus_id', $request->campus_id);
         }
-        if ($request->filled('department')) {
-            $query->where('department', $request->department_id);
+        if ($request->filled('department_id')) {
+            $query->where('department_id', $request->department_id);
         }
-        if ($request->filled('course')) {
-            $query->where('course', $request->course_id);
+        if ($request->filled('program_id')) {
+            $query->where('program_id', $request->program_id);
         }
         if ($request->filled('year')) {
             $query->where('year', $request->year);
@@ -59,23 +60,23 @@ class PaperController extends Controller
         return response()->json($papers);
     }
 
-    public function capstone(Request $request)
-    {
-        return response()->json(
-            $this->paperQuery($request)
-                ->where('paper_type', 'capstone')
-                ->paginate($request->integer('per_page', 5))
-        );
-    }
+    // public function capstone(Request $request)
+    // {
+    //     return response()->json(
+    //         $this->paperQuery($request)
+    //             ->where('paper_type', 'capstone')
+    //             ->paginate($request->integer('per_page', 5))
+    //     );
+    // }
 
-    public function thesis(Request $request)
-    {
-        return response()->json(
-            $this->paperQuery($request)
-                ->where('paper_type', 'thesis')
-                ->paginate($request->integer('per_page', 5))
-        );
-    }
+    // public function thesis(Request $request)
+    // {
+    //     return response()->json(
+    //         $this->paperQuery($request)
+    //             ->where('paper_type', 'thesis')
+    //             ->paginate($request->integer('per_page', 5))
+    //     );
+    // }
 
     public function analytics()
     {
@@ -89,7 +90,9 @@ class PaperController extends Controller
         //     ->with('category:id,name') // Eager load the category relationship to get the name
         //     ->get();
 
-        $papersByBulan = PaperUploads::where('campus', 1)->count(); // Replace 1 with the actual campus_id for Bulan
+        $papersByCampus = PaperUploads::select('campus_id', DB::raw('count(*) as total'))
+            ->groupBy('campus_id')
+            ->get();
 
         // $mostViewedPapers = PaperUploads::orderBy('views_count', 'desc')
         //     ->take(5)
@@ -99,7 +102,7 @@ class PaperController extends Controller
             'total_papers' => $totalPapers,
             'papers_capstone' => $papersCapstone,
             'papers_thesis' => $papersThesis,
-            'papers_by_bulan' => $papersByBulan,
+            'papers_by_campus' => $papersByCampus,
             // 'papers_by_category' => $papersByCategory,
             // 'most_viewed_papers' => $mostViewedPapers,
         ]);
@@ -113,9 +116,9 @@ class PaperController extends Controller
 
         $filedata = $uploader->storefile(
             $file,
-            $validated['campus'],
-            $validated['department'],
-            $validated['course']
+            $validated['campus_id'],
+            $validated['department_id'],
+            $validated['program_id']
         );
 
         try {
@@ -137,30 +140,36 @@ class PaperController extends Controller
         return response()->json($paperUpload);
     }
 
-    public function update(StorePaperRequest $request, $id)
+    public function update(StorePaperRequest $request, HandlesPapersUploads $uploader, $id)
     {
         $paperUpload = PaperUploads::findOrFail($id);
-        $validated = $request->validated();
+            $validated = $request->validated();
 
         // If a new file is uploaded, handle the file storage
         if ($request->hasFile('file')) {
             $file = $request->file('file');
+            $oldPath = $paperUpload->file_url;
 
-            $campus = $request->input('campus');
-            $department = $request->input('department');
-            $course = $request->input('course');
+            $filedata = $uploader->storefile(
+                $file,
+                $validated['campus_id'],
+                $validated['department_id'],
+                $validated['program_id']
+            );
 
-            $folderPath = sprintf('papers/%s/%s/%s', $campus, $department, $course);
-            $path = $file->store($folderPath, 'public'); // Store the file in the specified directory of the public disk
+            try {
+                $paperUpload->update(array_merge($validated, $filedata));
+            } catch (\Exception $e) {
+                Storage::disk('public')->delete($filedata['file_url']);
+                return response()->json(['message' => 'Failed to update paper', 'error' => $e->getMessage()], 500);
+            }
 
-            // Update file-related fields
-            $validated['file_url'] = $path;
-            $validated['original_filename'] = $file->getClientOriginalName();
-            $validated['file_size'] = $file->getSize();
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                Storage::disk('public')->delete($oldPath);
+            }
+        } else {
+            $paperUpload->update(array_merge($validated));
         }
-
-        // Update the PaperUploads record
-        $paperUpload->update($validated);
 
         return response()->json(['message' => 'Paper updated successfully', 'data' => $paperUpload]);
     }
@@ -168,8 +177,41 @@ class PaperController extends Controller
     public function destroy($id)
     {
         $paperUpload = PaperUploads::findOrFail($id);
+
+        if ($paperUpload->file_url && Storage::disk('public')->exists($paperUpload->file_url)) {
+            Storage::disk('public')->delete($paperUpload->file_url);
+        }
+
         $paperUpload->delete();
 
         return response()->json(['message' => 'Paper deleted successfully']);
+    }
+
+
+    public function incrementViews($id, Request $request)
+    {
+        $request->validate([
+            'session_id' => 'required|string',
+        ]);
+
+        $paper = PaperUploads::findOrFail($id);
+        $sessionId = $request->input('session_id');
+
+        $alreadyViewed = PaperViews::where('paper_upload_id', $id)
+            ->where('session_id', $sessionId)
+            ->exists();
+        
+        if (!$alreadyViewed) {
+            PaperViews::create([
+                'paper_upload_id' => $id,
+                'user_id' => auth('sanctum')->id(), // Assuming you want to associate the view with the authenticated user
+                'session_id' => $sessionId,
+                'viewed_at' => now(),
+            ]);
+
+            $paper->increment('views_count');
+        }
+
+        return response()->json(['message' => 'View count incremented successfully', 'views_count' => $paper->views_count]);
     }
 }
