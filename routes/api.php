@@ -18,6 +18,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     Route::post('/papers/{id}/view', [PaperController::class, 'recordView']);
     Route::get('/papers/{paperUpload}/file', [PaperController::class, 'viewFile']);
     Route::get('/locations', [LocationController::class, 'index']);
+    Route::get('/papers/{paperUpload}/file', [PaperController::class, 'viewFile']);
 
     
     Route::middleware('auth:sanctum')->group(function () {

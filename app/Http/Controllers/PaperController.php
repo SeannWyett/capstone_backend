@@ -214,4 +214,15 @@ class PaperController extends Controller
 
         return response()->json(['message' => 'View count incremented successfully', 'views_count' => $paper->views_count]);
     }
+    
+    public function viewFile(paperUploads $paperUpload)
+    {
+        $path = $paperUpload->file_url;
+
+        if (!Storage::disk('public')->exists($path)) {
+            return response()->json(['message' => 'File not found'], 404);
+        }
+
+        return response()->file(storage_path('app/public/' . $path));
+    }
 }
