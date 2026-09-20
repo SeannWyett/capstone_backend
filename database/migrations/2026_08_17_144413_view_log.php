@@ -11,13 +11,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('view_logs', function (Blueprint $table) {
+        Schema::create('paper_views', function (Blueprint $table) {
             $table->id();
             $table->foreignId('paper_upload_id')->constrained('paper_uploads')->cascadeOnDelete();
-            $table->string('action');
-            $table->string('viewer_ip');
+            $table->foreignId('user_id')->nullable()->constrained('users')->nullOnDelete();
+            $table->string('session_id');
             $table->dateTime('viewed_at')->default(now());
-            $table->timestamps();
         });
     }
 
@@ -26,6 +25,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('view_logs');
+        Schema::dropIfExists('paper_views');
     }
 };
