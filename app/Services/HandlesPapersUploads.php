@@ -6,10 +6,10 @@ use Illuminate\Http\UploadedFile;
 
 class HandlesPapersUploads
 {
-    public function storefile(UploadedFile $file, string $campus, string $department, string $course): array
+    public function storefile(UploadedFile $file, int $campus, int $college, int $course): array
     {
         // Define the folder path based on campus, department, and course
-        $folderPath = sprintf('papers/%s/%s/%s', $campus, $department, $course);
+        $folderPath = sprintf('papers/%d/%d/%d', $campus, $college, $course);
         $path = $file->store($folderPath, 'public');
 
         // Store the file in the specified directory of the public disk

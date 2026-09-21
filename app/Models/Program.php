@@ -8,7 +8,7 @@ class Program extends Model
 {
     protected $fillable = [
         'name',
-        'department_id',
+        'college_id',
     ];
 
     public function paperUploads()
@@ -16,13 +16,18 @@ class Program extends Model
         return $this->hasMany(PaperUploads::class);
     }
 
-    public function department()
+    public function college()
     {
-        return $this->belongsTo(Department::class);
+        return $this->belongsTo(College::class);
     }
 
     public function campus()
     {
-        return $this->belongsTo(Campus::class, 'department_id', 'campus_id');
+        return $this->belongsTo(Campus::class, 'college_id', 'campus_id');
+    }
+
+    public function categories()
+    {
+        return $this->hasMany(Category::class);
     }
 }

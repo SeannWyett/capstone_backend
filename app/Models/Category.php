@@ -8,11 +8,16 @@ class Category extends Model
 {
     protected $fillable = [
         'name',
-        'slug',
+        'program_id',
     ];
 
     public function paperUploads()
     {
         return $this->hasMany(PaperUploads::class);
+    }
+
+    public function program()
+    {
+        return $this->belongsTo(Program::class);
     }
 }

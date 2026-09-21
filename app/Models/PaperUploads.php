@@ -15,9 +15,9 @@ class PaperUploads extends Model
         'file_size',
         'year',
         'campus_id',
-        'department_id',
+        'college_id',
         'program_id',
-        // 'category_id',
+        'category_id',
         'views_count',
         'researchers',
         'viewable',
@@ -43,9 +43,9 @@ class PaperUploads extends Model
         return $this->belongsTo(Campus::class);
     }
 
-    public function department()
+    public function college()
     {
-        return $this->belongsTo(Department::class);
+        return $this->belongsTo(College::class);
     }
 
     public function program()

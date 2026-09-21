@@ -41,9 +41,9 @@ class StorePaperRequest extends FormRequest
             // 'department' => 'required|string|max:255',
             // 'course' => 'required|string|max:255',
             'campus_id' => 'required|integer|exists:campuses,id',
-            'department_id' => 'required|integer|exists:departments,id',
+            'college_id' => 'required|integer|exists:colleges,id',
             'program_id' => 'required|integer|exists:programs,id',
-            // 'category_id' => 'nullable|integer|exists:categories,id',
+            'category_id' => 'nullable|integer|exists:categories,id',
             'researchers' => 'required|string|max:255',
             'file' => 'required|file|mimes:pdf|max:10240', // Max file size of 10MB
         ];

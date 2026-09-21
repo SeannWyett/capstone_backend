@@ -9,6 +9,7 @@ use App\Http\Requests\StorePaperRequest;
 use App\Services\HandlesPapersUploads;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Cache;
 
 class PaperController extends Controller
 {
@@ -60,52 +61,68 @@ class PaperController extends Controller
         return response()->json($papers);
     }
 
-    // public function capstone(Request $request)
-    // {
-    //     return response()->json(
-    //         $this->paperQuery($request)
-    //             ->where('paper_type', 'capstone')
-    //             ->paginate($request->integer('per_page', 5))
-    //     );
-    // }
-
-    // public function thesis(Request $request)
-    // {
-    //     return response()->json(
-    //         $this->paperQuery($request)
-    //             ->where('paper_type', 'thesis')
-    //             ->paginate($request->integer('per_page', 5))
-    //     );
-    // }
-
     public function analytics()
     {
-        $totalPapers = PaperUploads::count();
+        return response()->json(
+            Cache::remember('paper-analytics', now()->addMinutes(15), function () {
+                $papersBytype = PaperUploads::select('paper_type', DB::raw('count(*) as total'))
+                    ->groupBy('paper_type')
+                    ->pluck('total', 'paper_type');
 
-        $papersCapstone = PaperUploads::where('paper_type', 'capstone')->count();
-        $papersThesis = PaperUploads::where('paper_type', 'thesis')->count();
+                $papersByCampus = PaperUploads::select('campus_id', DB::raw('count(*) as total'))
+                    ->groupBy('campus_id')
+                    ->with('campus:id,name') // Eager load the campus relationship
+                    ->get()
+                    ->mapWithKeys(function ($paper) {
+                        return [$paper->campus->name ??'Unknown' => $paper->total];
+                    });
 
-        // $papersByCategory = PaperUploads::select('category_id', DB::raw('count(*) as total'))
-        //     ->groupBy('category_id')
-        //     ->with('category:id,name') // Eager load the category relationship to get the name
-        //     ->get();
+                $papersByCollege = PaperUploads::select('college_id', DB::raw('count(*) as total'))
+                    ->groupBy('college_id')
+                    ->with('college:id,name') // Eager load the college relationship
+                    ->get()
+                    ->mapWithKeys(function ($paper) {
+                        return [$paper->college->name ??'Unknown' => $paper->total];
+                    });
+                
+                $papersByProgram = PaperUploads::select('program_id', DB::raw('count(*) as total'))
+                    ->groupBy('program_id')
+                    ->with('program:id,name') // Eager load the program relationship
+                    ->get()
+                    ->mapWithKeys(function ($paper) {
+                        return [$paper->program->name ??'Unknown' => $paper->total];
+                    });
 
-        $papersByCampus = PaperUploads::select('campus_id', DB::raw('count(*) as total'))
-            ->groupBy('campus_id')
-            ->get();
+                $papersByYear = PaperUploads::select('year', DB::raw('count(*) as total'))
+                    ->groupBy('year')
+                    ->pluck('total', 'year');
 
-        // $mostViewedPapers = PaperUploads::orderBy('views_count', 'desc')
-        //     ->take(5)
-        //     ->get();
+                $papersByCategory = PaperUploads::select('category_id', DB::raw('count(*) as total'))
+                    ->groupBy('category_id')
+                    ->with('category:id,name') // Eager load the category relationship
+                    ->get()
+                    ->mapWithKeys(function ($paper) {
+                        return [$paper->category->name ??'Unknown' => $paper->total];
+                    });
 
-        return response()->json([
-            'total_papers' => $totalPapers,
-            'papers_capstone' => $papersCapstone,
-            'papers_thesis' => $papersThesis,
-            'papers_by_campus' => $papersByCampus,
-            // 'papers_by_category' => $papersByCategory,
-            // 'most_viewed_papers' => $mostViewedPapers,
-        ]);
+                $mostViewedPapers = PaperUploads::orderBy('views_count', 'desc')
+                    ->take(5)
+                    ->get(['id', 'title', 'views_count']);
+                
+                return [
+                    'total_papers' => PaperUploads::count(),
+                    'papers_capstone' => $papersBytype['capstone'] ?? 0,
+                    'papers_thesis' => $papersBytype['thesis'] ?? 0,
+                    'papers_by_campus' => $papersByCampus,
+                    'papers_by_college' => $papersByCollege,
+                    'papers_by_program' => $papersByProgram,
+                    'papers_by_year' => $papersByYear,
+                    'papers_by_category' => $papersByCategory,
+                    'most_viewed_papers' => $mostViewedPapers,
+                ];
+            })
+        );
+        
     }
 
     public function store(StorePaperRequest $request, HandlesPapersUploads $uploader)
@@ -117,7 +134,7 @@ class PaperController extends Controller
         $filedata = $uploader->storefile(
             $file,
             $validated['campus_id'],
-            $validated['department_id'],
+            $validated['college_id'],
             $validated['program_id']
         );
 
@@ -215,9 +232,9 @@ class PaperController extends Controller
         return response()->json(['message' => 'View count incremented successfully', 'views_count' => $paper->views_count]);
     }
     
-    public function viewFile(paperUploads $paperUpload)
+    public function viewFile(PaperUploads $PaperUpload)
     {
-        $path = $paperUpload->file_url;
+        $path = $PaperUpload->file_url;
 
         if (!Storage::disk('public')->exists($path)) {
             return response()->json(['message' => 'File not found'], 404);
