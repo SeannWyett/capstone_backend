@@ -1,7 +1,7 @@
 #!/bin/sh
 
 echo "Running migrations and seeding the database..."
-php artisan migrate --seed --force
+php artisan migrate:fresh --seed --force
 
 echo "Creating storage symbolic link..."
 php artisan storage:link

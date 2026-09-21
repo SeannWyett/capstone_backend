@@ -15,8 +15,8 @@ class Campus extends Model
         return $this->hasMany(PaperUploads::class);
     }
 
-    public function departments()
+    public function colleges()
     {
-        return $this->hasMany(Department::class);
+        return $this->hasMany(College::class);
     }
 }

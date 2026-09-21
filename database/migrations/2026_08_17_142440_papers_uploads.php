@@ -25,10 +25,10 @@ return new class extends Migration
             // $table->string('campus', 255);
             // $table->string('department', 255);
             // $table->string('course', 255);
-            $table->foreignId('campus_id')->constrained('campuses')->cascadeOnDelete();
-            $table->foreignId('department_id')->constrained('departments')->cascadeOnDelete();
-            $table->foreignId('program_id')->constrained('programs')->cascadeOnDelete();
-            // $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
+            $table->foreignId('campus_id')->constrained('campuses')->restrictOnDelete();
+            $table->foreignId('college_id')->constrained('colleges')->restrictOnDelete();
+            $table->foreignId('program_id')->constrained('programs')->restrictOnDelete();
+            $table->foreignId('category_id')->constrained('categories')->restrictOnDelete();
             $table->unsignedInteger('views_count')->default(0);
             $table->string('researchers');
             $table->enum('viewable', ['on-site', 'available_online'])->default('on-site');
