@@ -81,8 +81,11 @@ class LocationController extends Controller
     public function destroyCampus($id)
     {
         $campus = Campus::findOrFail($id);
+        if ($campus->colleges()->exists()) {
+            return response()->json(['message' => 'Cannot delete campus with associated colleges'], 409);
+        }
         $campus->delete();
-
+        
         cache()->forget('locations-tree');
 
         return response()->json(['message' => 'Campus deleted successfully']);
@@ -169,7 +172,7 @@ class LocationController extends Controller
     public function index()
     {
         $campuses = cache()->remember('locations-tree', now()->addHours(6), function () {
-            return Campus::with(['colleges.programs'])->get();
+            return Campus::with(['colleges.programs'])->get()->toArray();
         });
 
         return response()->json(['campuses' => $campuses]);
