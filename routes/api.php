@@ -21,6 +21,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     Route::get('/locations', [LocationController::class, 'index']);
     Route::get('/papers/{paperUpload}/file', [PaperController::class, 'viewFile']);
     Route::get('/analytics', [PaperController::class, 'analytics']);
+    Route::get('/category', [CategoryController::class, 'index']);
 
     
     Route::middleware('auth:sanctum')->group(function () {
