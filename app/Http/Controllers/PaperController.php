@@ -29,12 +29,12 @@ class PaperController extends Controller
             });
         }
 
-        //filtering by campus, department, course, year, and paper_type
+        //filtering by campus, college, program, year, and paper_type
         if ($request->filled('campus_id')) {
             $query->where('campus_id', $request->campus_id);
         }
-        if ($request->filled('department_id')) {
-            $query->where('department_id', $request->department_id);
+        if ($request->filled('college_id')) {
+            $query->where('college_id', $request->college_id);
         }
         if ($request->filled('program_id')) {
             $query->where('program_id', $request->program_id);
@@ -51,11 +51,11 @@ class PaperController extends Controller
 
     public function index(Request $request)
     {
-        $query = $this->paperQuery($request);
+        $query = $this->paperQuery($request)
+            ->with(['campus:id,name', 'college:id,name', 'program:id,name', 'category:id,name']); // Eager load relationships
 
         // Pagination
-        $perPage = $request->integer('per_page', 5); // Default to 5 if not provided
-        $perPage = min($perPage, 10); // Limit to a maximum of 10
+        $perPage = min($request->integer('per_page', 5), 10); // Default to 5 if not provided, Limit to a maximum of 10
         $papers = $query->paginate($perPage);
 
         return response()->json($papers);
