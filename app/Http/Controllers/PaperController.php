@@ -142,7 +142,7 @@ class PaperController extends Controller
             $paperUpload = PaperUploads::create(array_merge($validated, $filedata));
         } catch (\Exception $e) {
             // If there's an error during the database operation, delete the uploaded file
-            Storage::disk('public')->delete($filedata['file_url']);
+            Storage::disk(config('filesystems.default'))->delete($filedata['file_url']);
             return response()->json(['message' => 'Failed to upload paper', 'error' => $e->getMessage()], 500);
         }
 
@@ -152,8 +152,9 @@ class PaperController extends Controller
 
     public function show($id)
     {
-        $paperUpload = PaperUploads::findOrFail($id);
-        $paperUpload->paper_type = ucfirst($paperUpload->paper_type); // Ensure paper_type is included in the response
+        $paperUpload = PaperUploads::with(['campus:id,name', 'college:id,name', 'program:id,name', 'category:id,name'])
+            ->findOrFail($id);
+        
         return response()->json($paperUpload);
     }
 
@@ -177,12 +178,12 @@ class PaperController extends Controller
             try {
                 $paperUpload->update(array_merge($validated, $filedata));
             } catch (\Exception $e) {
-                Storage::disk('public')->delete($filedata['file_url']);
+                Storage::disk(config('filesystems.default'))->delete($filedata['file_url']);
                 return response()->json(['message' => 'Failed to update paper', 'error' => $e->getMessage()], 500);
             }
 
-            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
-                Storage::disk('public')->delete($oldPath);
+            if ($oldPath && Storage::disk(config('filesystems.default'))->exists($oldPath)) {
+                Storage::disk(config('filesystems.default'))->delete($oldPath);
             }
         } else {
             $paperUpload->update(array_merge($validated));
@@ -195,8 +196,8 @@ class PaperController extends Controller
     {
         $paperUpload = PaperUploads::findOrFail($id);
 
-        if ($paperUpload->file_url && Storage::disk('public')->exists($paperUpload->file_url)) {
-            Storage::disk('public')->delete($paperUpload->file_url);
+        if ($paperUpload->file_url && Storage::disk(config('filesystems.default'))->exists($paperUpload->file_url)) {
+            Storage::disk(config('filesystems.default'))->delete($paperUpload->file_url);
         }
 
         $paperUpload->delete();
@@ -236,7 +237,7 @@ class PaperController extends Controller
     {
         $path = $PaperUpload->file_url;
 
-        if (!Storage::disk('public')->exists($path)) {
+        if (!Storage::disk(config('filesystems.default'))->exists($path)) {
             return response()->json(['message' => 'File not found'], 404);
         }
 
