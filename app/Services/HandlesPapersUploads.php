@@ -10,7 +10,7 @@ class HandlesPapersUploads
     {
         // Define the folder path based on campus, department, and course
         $folderPath = sprintf('papers/%d/%d/%d', $campus, $college, $course);
-        $path = $file->store($folderPath, 'public');
+        $path = $file->store($folderPath, config('filesystems.default'));
 
         // Store the file in the specified directory of the public disk
         return [
