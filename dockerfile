@@ -36,6 +36,8 @@ COPY docker/nginx.conf /etc/nginx/sites-available/default
 # Expose port
 EXPOSE 80
 
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
+
 # Start script (runs php-fpm and nginx together)
 COPY docker/start.sh /start.sh
 RUN chmod +x /start.sh
