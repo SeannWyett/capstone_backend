@@ -16,10 +16,9 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     
     Route::get('/papers', [PaperController::class, 'index']);
     Route::get('/papers/{id}', [PaperController::class, 'show']);
-    Route::post('/papers/{id}/view', [PaperController::class, 'recordView']);
+    Route::post('/papers/{id}/view', [PaperController::class, 'incrementViews']);
     Route::get('/papers/{paperUpload}/file', [PaperController::class, 'viewFile']);
     Route::get('/locations', [LocationController::class, 'index']);
-    Route::get('/papers/{paperUpload}/file', [PaperController::class, 'viewFile']);
     Route::get('/analytics', [PaperController::class, 'analytics']);
     Route::get('/category', [CategoryController::class, 'index']);
 
