@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 
+
 class PaperController extends Controller
 {
     private function paperQuery(Request $request)
@@ -241,13 +242,16 @@ class PaperController extends Controller
     }
     
     public function viewFile(PaperUploads $PaperUpload)
-    {
+    {   
+        $disk = config('filesystems.default');
         $path = $PaperUpload->file_url;
 
-        if (!Storage::disk(config('filesystems.default'))->exists($path)) {
+        if (!Storage::disk($disk)->exists($path)) {
             return response()->json(['message' => 'File not found'], 404);
         }
 
-        return response()->file(storage_path('app/public/' . $path));
+        return response(Storage::disk($disk)->get($path), 200)
+            ->header('Content-Type', Storage::disk($disk)->mimeType($path))
+            ->header('Content-Disposition', 'inline; filename="' . $PaperUpload->original_filename . '"');
     }
 }
