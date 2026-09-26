@@ -138,19 +138,23 @@ class PaperController extends Controller
 
         $validated = $request->validated();
         $file = $request->file('file');
+        $filedata = null;
 
-        $filedata = $uploader->storefile(
-            $file,
-            $validated['campus_id'],
-            $validated['college_id'],
-            $validated['program_id']
-        );
-
+        
         try {
+            $filedata = $uploader->storefile(
+                $file,
+                $validated['campus_id'],
+                $validated['college_id'],
+                $validated['program_id']
+            );
+
             $paperUpload = PaperUploads::create(array_merge($validated, $filedata));
         } catch (\Exception $e) {
             // If there's an error during the database operation, delete the uploaded file
-            Storage::disk(config('filesystems.default'))->delete($filedata['file_url']);
+            if ($filedata && Storage::disk(config('filesystems.default'))->exists($filedata['file_url'])) {
+                Storage::disk(config('filesystems.default'))->delete($filedata['file_url']);
+            }
             return response()->json(['message' => 'Failed to upload paper', 'error' => $e->getMessage()], 500);
         }
 
@@ -169,29 +173,32 @@ class PaperController extends Controller
     public function update(StorePaperRequest $request, HandlesPapersUploads $uploader, $id)
     {
         $paperUpload = PaperUploads::findOrFail($id);
-            $validated = $request->validated();
+        $validated = $request->validated();
 
         // If a new file is uploaded, handle the file storage
         if ($request->hasFile('file')) {
             $file = $request->file('file');
             $oldPath = $paperUpload->file_url;
-
-            $filedata = $uploader->storefile(
-                $file,
-                $validated['campus_id'],
-                $validated['department_id'],
-                $validated['program_id']
-            );
+            $filedata = null;
 
             try {
-                $paperUpload->update(array_merge($validated, $filedata));
-            } catch (\Exception $e) {
-                Storage::disk(config('filesystems.default'))->delete($filedata['file_url']);
-                return response()->json(['message' => 'Failed to update paper', 'error' => $e->getMessage()], 500);
-            }
+                $filedata = $uploader->storefile(
+                    $file,
+                    $validated['campus_id'],
+                    $validated['college_id'],
+                    $validated['program_id']
+                );
 
-            if ($oldPath && Storage::disk(config('filesystems.default'))->exists($oldPath)) {
-                Storage::disk(config('filesystems.default'))->delete($oldPath);
+                $paperUpload->update(array_merge($validated, $filedata));
+
+                if ($oldPath && Storage::disk(config('filesystems.default'))->exists($oldPath)) {
+                    Storage::disk(config('filesystems.default'))->delete($oldPath);
+                }
+            } catch (\Exception $e) {
+                if ($filedata && Storage::disk(config('filesystems.default'))->exists($filedata['file_url'])) {
+                    Storage::disk(config('filesystems.default'))->delete($filedata['file_url']);
+                }
+            return response()->json(['message' => 'Failed to update paper', 'error' => $e->getMessage()], 500);
             }
         } else {
             $paperUpload->update(array_merge($validated));
@@ -209,6 +216,8 @@ class PaperController extends Controller
         }
 
         $paperUpload->delete();
+
+        cache()->forget('paper-analytics');
 
         return response()->json(['message' => 'Paper deleted successfully']);
     }
