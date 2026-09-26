@@ -167,7 +167,7 @@ class LocationController extends Controller
             return response()->json(['message' => 'Campus deleted successfully']);
         }
 
-        private function syncPrograms(College $college, array $submittedPrograms)
+    private function syncPrograms(College $college, array $submittedPrograms)
         {
             $submitted = collect($submittedPrograms);
             $submittedIds = $submitted->pluck('id')->filter()->map(fn ($v) => (int) $v);

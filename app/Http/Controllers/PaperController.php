@@ -67,7 +67,8 @@ class PaperController extends Controller
             Cache::remember('paper-analytics', now()->addMinutes(15), function () {
                 $papersBytype = PaperUploads::select('paper_type', DB::raw('count(*) as total'))
                     ->groupBy('paper_type')
-                    ->pluck('total', 'paper_type');
+                    ->pluck('total', 'paper_type')
+                    ->toArray();
 
                 $papersByCampus = PaperUploads::select('campus_id', DB::raw('count(*) as total'))
                     ->groupBy('campus_id')
@@ -75,7 +76,8 @@ class PaperController extends Controller
                     ->get()
                     ->mapWithKeys(function ($paper) {
                         return [$paper->campus->name ??'Unknown' => $paper->total];
-                    });
+                    })
+                    ->toArray();
 
                 $papersByCollege = PaperUploads::select('college_id', DB::raw('count(*) as total'))
                     ->groupBy('college_id')
@@ -83,7 +85,8 @@ class PaperController extends Controller
                     ->get()
                     ->mapWithKeys(function ($paper) {
                         return [$paper->college->name ??'Unknown' => $paper->total];
-                    });
+                    })
+                    ->toArray();
                 
                 $papersByProgram = PaperUploads::select('program_id', DB::raw('count(*) as total'))
                     ->groupBy('program_id')
@@ -91,11 +94,13 @@ class PaperController extends Controller
                     ->get()
                     ->mapWithKeys(function ($paper) {
                         return [$paper->program->name ??'Unknown' => $paper->total];
-                    });
+                    })
+                    ->toArray();
 
                 $papersByYear = PaperUploads::select('year', DB::raw('count(*) as total'))
                     ->groupBy('year')
-                    ->pluck('total', 'year');
+                    ->pluck('total', 'year')
+                    ->toArray();
 
                 $papersByCategory = PaperUploads::select('category_id', DB::raw('count(*) as total'))
                     ->groupBy('category_id')
@@ -103,11 +108,13 @@ class PaperController extends Controller
                     ->get()
                     ->mapWithKeys(function ($paper) {
                         return [$paper->category->name ??'Unknown' => $paper->total];
-                    });
+                    })
+                    ->toArray();
 
                 $mostViewedPapers = PaperUploads::orderBy('views_count', 'desc')
                     ->take(5)
-                    ->get(['id', 'title', 'views_count']);
+                    ->get(['id', 'title', 'views_count'])
+                    ->toArray();
                 
                 return [
                     'total_papers' => PaperUploads::count(),
