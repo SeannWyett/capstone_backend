@@ -45,7 +45,9 @@ class StorePaperRequest extends FormRequest
             'program_id' => 'required|integer|exists:programs,id',
             'category_id' => 'nullable|integer|exists:categories,id',
             'researchers' => 'required|string|max:255',
-            'file' => 'required|file|mimes:pdf|max:10240', // Max file size of 10MB
+            'file' => $this->isMethod('PUT') || $this->isMethod('PATCH')
+                ? 'sometimes|file|mimes:pdf|max:10240'
+                : 'required|file|mimes:pdf|max:10240', // Max file size of 10MB
         ];
     }
 }
