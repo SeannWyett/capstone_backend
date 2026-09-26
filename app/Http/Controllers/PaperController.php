@@ -116,7 +116,7 @@ class PaperController extends Controller
                 $mostViewedPapers = PaperUploads::with(['campus:id,name', 'college:id,name', 'program:id,name', 'category:id,name'])
                     ->orderBy('views_count', 'desc')
                     ->take(5)
-                    ->get(['id', 'title', 'views_count', 'campus_id', 'college_id', 'program_id', 'category_id, researchers, year'])
+                    ->get(['id', 'title', 'views_count', 'campus_id', 'college_id', 'program_id', 'category_id', 'researchers', 'year'])
                     ->map(function ($paper) {
                         return [
                             'id' => $paper->id,
