@@ -241,10 +241,10 @@ class PaperController extends Controller
         return response()->json(['message' => 'View count incremented successfully', 'views_count' => $paper->views_count]);
     }
     
-    public function viewFile(PaperUploads $PaperUpload)
+    public function viewFile(PaperUploads $paperUpload)
     {   
         $disk = config('filesystems.default');
-        $path = $PaperUpload->file_url;
+        $path = $paperUpload->file_url;
 
         if (!Storage::disk($disk)->exists($path)) {
             return response()->json(['message' => 'File not found'], 404);
@@ -252,6 +252,6 @@ class PaperController extends Controller
 
         return response(Storage::disk($disk)->get($path), 200)
             ->header('Content-Type', Storage::disk($disk)->mimeType($path))
-            ->header('Content-Disposition', 'inline; filename="' . $PaperUpload->original_filename . '"');
+            ->header('Content-Disposition', 'inline; filename="' . $paperUpload->original_filename . '"');
     }
 }
