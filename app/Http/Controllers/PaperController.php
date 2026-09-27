@@ -173,7 +173,7 @@ class PaperController extends Controller
             return response()->json(['message' => 'Failed to upload paper', 'error' => $e->getMessage()], 500);
         }
 
-
+        cache()->forget('paper-analytics');
         return response()->json(['message' => 'Paper uploaded successfully', 'data' => $paperUpload], 201);
     }
 
@@ -219,6 +219,8 @@ class PaperController extends Controller
             $paperUpload->update(array_merge($validated));
         }
 
+        cache()->forget('paper-analytics');
+
         return response()->json(['message' => 'Paper updated successfully', 'data' => $paperUpload]);
     }
 
@@ -261,6 +263,8 @@ class PaperController extends Controller
 
             $paper->increment('views_count');
         }
+
+        cache()->forget('paper-analytics');
 
         return response()->json(['message' => 'View count incremented successfully', 'views_count' => $paper->views_count]);
     }
