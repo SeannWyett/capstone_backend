@@ -126,6 +126,8 @@ class PaperController extends Controller
                             'college' => $paper->college?->name,
                             'program' => $paper->program?->name,
                             'category' => $paper->category?->name,
+                            'year' => $paper->year,
+                            'researchers' => $paper->researcher,
                         ];
                     })
                     ->toArray();
