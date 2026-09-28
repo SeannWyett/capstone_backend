@@ -65,8 +65,8 @@ class PaperController extends Controller
 
     public function analytics()
     {
-        return response()->json(
-            Cache::remember('paper-analytics', now()->addMinutes(15), function () {
+        // return response()->json(
+            // Cache::remember('paper-analytics', now()->addMinutes(15), function () {
                 $papersBytype = PaperUploads::select('paper_type', DB::raw('count(*) as total'))
                     ->groupBy('paper_type')
                     ->pluck('total', 'paper_type')
@@ -140,7 +140,7 @@ class PaperController extends Controller
                     })
                     ->toArray();
                 
-                return [
+                return response()->json([
                     'total_papers' => PaperUploads::count(),
                     'papers_capstone' => $papersBytype['capstone'] ?? 0,
                     'papers_thesis' => $papersBytype['thesis'] ?? 0,
@@ -150,9 +150,9 @@ class PaperController extends Controller
                     'papers_by_year' => $papersByYear,
                     'papers_by_category' => $papersByCategory,
                     'most_viewed_papers' => $mostViewedPapers,
-                ];
-            })
-        );
+                ]);
+            // })
+        // );
         
     }
 
@@ -181,7 +181,7 @@ class PaperController extends Controller
             return response()->json(['message' => 'Failed to upload paper', 'error' => $e->getMessage()], 500);
         }
 
-        cache()->forget('paper-analytics');
+        // cache()->forget('paper-analytics');
         return response()->json(['message' => 'Paper uploaded successfully', 'data' => $paperUpload], 201);
     }
 
@@ -227,7 +227,7 @@ class PaperController extends Controller
             $paperUpload->update(array_merge($validated));
         }
 
-        cache()->forget('paper-analytics');
+        // cache()->forget('paper-analytics');
 
         return response()->json(['message' => 'Paper updated successfully', 'data' => $paperUpload]);
     }
@@ -242,7 +242,7 @@ class PaperController extends Controller
 
         $paperUpload->delete();
 
-        cache()->forget('paper-analytics');
+        // cache()->forget('paper-analytics');
 
         return response()->json(['message' => 'Paper deleted successfully']);
     }
@@ -272,7 +272,7 @@ class PaperController extends Controller
             $paper->increment('views_count');
         }
 
-        cache()->forget('paper-analytics');
+        // cache()->forget('paper-analytics');
 
         return response()->json(['message' => 'View count incremented successfully', 'views_count' => $paper->views_count]);
     }
