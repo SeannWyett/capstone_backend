@@ -23,10 +23,10 @@ class PaperController extends Controller
             $search = $request->search;
 
             $query->where(function ($query) use ($search) {
-                $query->where('title', 'like', "%{$search}%")
-                        ->orWhere('researchers', 'like', "%{$search}%")
+                $query->whereLike('title',  "%{$search}%")
+                        ->orWhereLike('researchers', "%{$search}%")
                         ->orWhereHas('category', function ($query) use ($search) {
-                            $query->where('name', 'like', "%{$search}%");
+                            $query->whereLike('name', "%{$search}%");
                         });
             });
         }
