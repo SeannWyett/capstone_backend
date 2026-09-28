@@ -104,12 +104,18 @@ class PaperController extends Controller
                     ->pluck('total', 'year')
                     ->toArray();
 
-                $papersByCategory = PaperUploads::select('category_id', DB::raw('count(*) as total'))
+                $papersByCategory = PaperUploads::select(
+                        'category_id',
+                        DB::raw('count(*) as total')
+                    )
                     ->groupBy('category_id')
-                    ->with('category:id,name') // Eager load the category relationship
+                    ->with('category:id,name')
                     ->get()
-                    ->mapWithKeys(function ($paper) {
-                        return [$paper->category->name ??'Unknown' => $paper->total];
+                    ->groupBy(function ($paper) {
+                        return $paper->category->name ?? 'Unknown';
+                    })
+                    ->map(function ($categories) {
+                        return $categories->sum('total');
                     })
                     ->toArray();
 
