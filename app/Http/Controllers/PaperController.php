@@ -63,7 +63,7 @@ class PaperController extends Controller
         return response()->json($papers);
     }
 
-    public function analytics()
+    public function analytics(Request $request)
     {
         // return response()->json(
             // Cache::remember('paper-analytics', now()->addMinutes(15), function () {
@@ -120,6 +120,7 @@ class PaperController extends Controller
                     ->toArray();
 
                 $mostViewedPapers = PaperUploads::with(['campus:id,name', 'college:id,name', 'program:id,name', 'category:id,name'])
+                    ->when($request->filled('program_id'), fn ($q) => $q->where('campus_id', $request->campus_id))
                     ->orderBy('views_count', 'desc')
                     ->take(5)
                     ->get(['id', 'title', 'views_count', 'campus_id', 'college_id', 'program_id', 'category_id', 'researchers', 'year', 'paper_type', 'views_count'])
