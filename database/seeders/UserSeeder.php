@@ -15,34 +15,18 @@ class UserSeeder extends Seeder
     public function run(): void
     {
         User::create([
-            'name' => 'admin1',
-            'username' => 'admin1',
+            'name' => 'Super Admin',
+            'username' => 'superadmin',
             'password' => Hash::make('12345678'),
-            'role' => 'admin',
+            'role' => 'super_admin',
             'campus_id' => 1
         ]);
 
         User::create([
-            'name' => 'admin2',
-            'username' => 'admin2',
+            'name' => 'Bulan Admin',
+            'username' => 'bulanadmin',
             'password' => Hash::make('12345678'),
-            'role' => 'admin',
-            'campus_id' => 2
-        ]);
-
-        User::create([
-            'name' => 'user1',
-            'username' => 'user1',
-            'password' => Hash::make('12345678'),
-            'role' => 'user',
-            'campus_id' => 1
-        ]);
-
-        User::create([
-            'name' => 'user2',
-            'username' => 'user2',
-            'password' => Hash::make('12345678'),
-            'role' => 'user',
+            'role' => 'campus_admin',
             'campus_id' => 2
         ]);
     }

@@ -19,4 +19,9 @@ class Campus extends Model
     {
         return $this->hasMany(College::class);
     }
+
+    public function policy()
+    {
+        return $this->hasOne(CampusPolicy::class);
+    }
 }

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
+
 class ApiLoginController extends Controller
 {
     public function login(Request $request)
@@ -22,6 +23,13 @@ class ApiLoginController extends Controller
         }
 
         $user = Auth::user();
+
+        if ($user->role === 'student' && !$user->hasVerifiedEmail()) {
+            Auth::logout();
+            return response()->json([
+                'message' => 'Please verify your email before logging in.', 
+            ], 403);
+        }
 
         $token = $user->createToken('api-token', ['*'], now()->addDays(7))->plainTextToken;
 
