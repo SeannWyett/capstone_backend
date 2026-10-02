@@ -3,12 +3,16 @@
 use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\ApiLoginController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\StudentRegisterController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PaperController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\CategoryController;
+use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use App\Http\Controllers\UserController;
 
 Route::post('/login', [ApiLoginController::class, 'login']);
+Route::post('/register', [StudentRegisterController::class, 'register']);
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -22,6 +26,11 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     Route::get('/analytics', [PaperController::class, 'analytics']);
     Route::get('/category', [CategoryController::class, 'index']);
 
+    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+        $request->fulfill();
+        return response()->json(['message' => 'Email verified successfully. You can now log in.'], 200);
+    })->middleware(['auth:sanctum', 'signed'])->name('verification.verify');
+
     
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/papers', [PaperController::class, 'store']);
@@ -33,6 +42,11 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
         Route::post('/locations', [LocationController::class, 'addLocation']);
         Route::put('/locations/{id}', [LocationController::class, 'updateLocation']);
         Route::delete('/campus/{id}', [LocationController::class, 'destroyCampus']);
+
+        //superadmin routes
+        Route::post('/admin/campus-admins', [UserController::class, 'createCampusAdmin']);
+        Route::get('/admin/users', [UserController::class, 'index']);
+        Route::delete('/admin/users/{id}', [UserController::class, 'destroy']);
 
         // Route::post('/campus', [LocationController::class, 'addCampus']);
         // Route::put('/campus/{id}', [LocationController::class, 'updateCampus']);

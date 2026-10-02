@@ -10,6 +10,7 @@ use App\Services\HandlesPapersUploads;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Gate;
 
 
 class PaperController extends Controller
@@ -159,6 +160,7 @@ class PaperController extends Controller
 
     public function store(StorePaperRequest $request, HandlesPapersUploads $uploader)
     {
+        Gate::authorize('create', PaperUploads::class); 
 
         $validated = $request->validated();
         $file = $request->file('file');
@@ -187,16 +189,23 @@ class PaperController extends Controller
     }
 
     public function show($id)
-    {
-        $paperUpload = PaperUploads::with(['campus:id,name', 'college:id,name', 'program:id,name', 'category:id,name'])
+    {   
+        $paperUpload = PaperUploads::with(['campus.policy','campus:id,name', 'college:id,name', 'program:id,name', 'category:id,name'])
             ->findOrFail($id);
         
+        if (Gate::denies('viewMetadata', $paperUpload)) {
+            return response()->json(['message' => 'You are not allowed to view this paper metadata'], 403);
+        }
+
         return response()->json($paperUpload);
     }
 
     public function update(StorePaperRequest $request, HandlesPapersUploads $uploader, $id)
     {
         $paperUpload = PaperUploads::findOrFail($id);
+
+        Gate::authorize('update', $paperUpload);
+
         $validated = $request->validated();
 
         // If a new file is uploaded, handle the file storage
@@ -234,8 +243,10 @@ class PaperController extends Controller
     }
 
     public function destroy($id)
-    {
+    {   
         $paperUpload = PaperUploads::findOrFail($id);
+
+        Gate::authorize('delete', $paperUpload);
 
         if ($paperUpload->file_url && Storage::disk(config('filesystems.default'))->exists($paperUpload->file_url)) {
             Storage::disk(config('filesystems.default'))->delete($paperUpload->file_url);
@@ -280,6 +291,12 @@ class PaperController extends Controller
     
     public function viewFile(PaperUploads $paperUpload)
     {   
+        $paperUpload->load('campus.policy'); // Eager load the campus and its policy
+
+        if (!Gate::allows('viewFile', $paperUpload)) {
+            return response()->json(['message' => 'You are not allowed to view this file'], 403);
+        }
+
         $disk = config('filesystems.default');
         $path = $paperUpload->file_url;
 
