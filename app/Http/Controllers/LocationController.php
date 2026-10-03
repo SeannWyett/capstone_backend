@@ -132,6 +132,16 @@ class LocationController extends Controller
                 $campus->name = $request->input('name');
                 $campus->save();
 
+                if ($request->hasAny([
+                    'guest_can_view_metadata', 'guest_can_view_file', 'guest_can_download',
+                    'student_view_metadata_scope', 'student_view_file_scope', 'student_download_scope',
+                ])) {
+                    $campus->policy()->updateOrCreate([], $request->only([
+                        'guest_can_view_metadata', 'guest_can_view_file', 'guest_can_download',
+                        'student_view_metadata_scope', 'student_view_file_scope', 'student_download_scope',
+                    ]));
+                }
+
                 $submittedColleges = collect($request->input('colleges', []));
                 $submittedCollegeIds = $submittedColleges->pluck('id')->filter()->map(fn ($v) => (int) $v);
                 $existingCollegeIds = $campus->colleges()->pluck('id');

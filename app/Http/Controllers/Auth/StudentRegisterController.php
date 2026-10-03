@@ -16,7 +16,7 @@ class StudentRegisterController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:255|unique:users,username',
+            'username' => 'required|string|max:10|unique:users,username',
             'email' => [
                 'required', 'email', 'unique:users,email',
                 'regex:/^[\w.+-]+@sorsu\.edu\.ph$/i',
