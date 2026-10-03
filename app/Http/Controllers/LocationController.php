@@ -175,7 +175,10 @@ class LocationController extends Controller
                 report($e);
 
                 return response()->json([
-                    'message' => $e->getMessage(),
+                    'message' => $e->getMessage() ?: 'Unknown error (empty message)',
+                    'exception' => get_class($e),
+                    'file' => basename($e->getFile()),
+                    'line' => $e->getLine(),
                 ], 409);
             }
             
