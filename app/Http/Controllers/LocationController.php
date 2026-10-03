@@ -295,7 +295,7 @@ class LocationController extends Controller
     public function index()
     {
         $campuses = cache()->remember('locations-tree', now()->addHours(6), function () {
-            return Campus::with(['colleges.programs.categories.', 'policy'])->get()->toArray();
+            return Campus::with(['colleges.programs.categories', 'policy'])->get()->toArray();
         });
 
         return response()->json(['campuses' => $campuses]);
