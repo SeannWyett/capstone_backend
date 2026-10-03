@@ -16,7 +16,7 @@ Route::post('/register', [StudentRegisterController::class, 'register']);
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
     return response()->json(['message' => 'Email verified successfully. You can now log in.'], 200);
-})->middleware(['auth:sanctum', 'signed'])->name('verification.verify');
+})->middleware(['signed'])->name('verification.verify');
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -29,13 +29,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     Route::get('/locations', [LocationController::class, 'index']);
     Route::get('/analytics', [PaperController::class, 'analytics']);
     Route::get('/category', [CategoryController::class, 'index']);
-
-    Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
-        $request->fulfill();
-        return response()->json(['message' => 'Email verified successfully. You can now log in.'], 200);
-    })->middleware(['signed'])->name('verification.verify');
-
-    
+        
     Route::middleware('auth:sanctum')->group(function () {
         Route::post('/papers', [PaperController::class, 'store']);
         Route::put('/papers/{id}', [PaperController::class, 'update']);
