@@ -13,6 +13,10 @@ use App\Http\Controllers\UserController;
 
 Route::post('/login', [ApiLoginController::class, 'login']);
 Route::post('/register', [StudentRegisterController::class, 'register']);
+Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
+    $request->fulfill();
+    return response()->json(['message' => 'Email verified successfully. You can now log in.'], 200);
+})->middleware(['auth:sanctum', 'signed'])->name('verification.verify');
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
@@ -29,7 +33,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
         $request->fulfill();
         return response()->json(['message' => 'Email verified successfully. You can now log in.'], 200);
-    })->middleware(['auth:sanctum', 'signed'])->name('verification.verify');
+    })->middleware(['signed'])->name('verification.verify');
 
     
     Route::middleware('auth:sanctum')->group(function () {

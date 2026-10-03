@@ -172,10 +172,14 @@ class LocationController extends Controller
             }catch (\Illuminate\Validation\ValidationException $e) {
                 throw $e; //laravel's normal 422 response
             }catch (\Exception $e) {
-                return response()->json(['message' => $e->getMessage()], 409);
+                report($e);
+
+                return response()->json([
+                    'message' => $e->getMessage(),
+                ], 409);
             }
             
-            $campus->load('colleges.programs.categories');
+            $campus->load('colleges.programs.categories', 'policy');
             cache()->forget('locations-tree');
             
             return response()->json(['message' => 'Campus updated successfully', 'campus' => $campus]);
