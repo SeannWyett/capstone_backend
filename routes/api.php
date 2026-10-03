@@ -17,6 +17,7 @@ Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $requ
     $request->fulfill();
     return response()->json(['message' => 'Email verified successfully. You can now log in.'], 200);
 })->middleware(['signed'])->name('verification.verify');
+Route::post('email/resend', [StudentRegisterController::class, 'resend']);
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
