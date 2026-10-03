@@ -19,9 +19,9 @@ return new class extends Migration
             $table->boolean('guest_can_view_file')->default(false);
             $table->boolean('guest_can_download')->default(false);
 
-            $table->enum('student_can_view_metadata_scope', ['none', 'same_campus', 'all_campus'])->default('all_campus');
-            $table->enum('student_can_view_file_scope', ['none', 'same_campus', 'all_campus'])->default('same_campus');
-            $table->enum('student_can_download_scope', ['none', 'same_campus', 'all_campus'])->default('same_campus');
+            $table->enum('student_view_metadata_scope', ['none', 'same_campus', 'all_campus'])->default('all_campus');
+            $table->enum('student_view_file_scope', ['none', 'same_campus', 'all_campus'])->default('same_campus');
+            $table->enum('student_download_scope', ['none', 'same_campus', 'all_campus'])->default('same_campus');
 
             $table->timestamps();
         });
