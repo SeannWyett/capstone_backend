@@ -21,7 +21,7 @@ Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']
 
 //Email Verification Routes
 Route::get('/email/verify/{id}/{hash}', [StudentRegisterController::class, 'verify'])
-    ->middleware(['signed'])
+    // ->middleware(['signed'])
     ->name('api.verification.verify');
 
 Route::post('email/resend', [StudentRegisterController::class, 'resend']);
