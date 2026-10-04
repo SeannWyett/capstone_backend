@@ -77,6 +77,10 @@ class LocationController extends Controller
 
     public function addLocation(Request $request)
     {
+        if ($request->user()?->role !== 'super_admin') {
+            abort(403, 'Only a super admin can create a new campus.');
+        }
+
         $this->validateLocation($request);
 
         try {
@@ -125,6 +129,15 @@ class LocationController extends Controller
     public function updateLocation(Request $request, $id)
     {
         $campus = Campus::findOrFail($id);
+
+        $user = $request->user();
+        $isSuperAdmin = $user?->role === 'super_admin';
+        $isOwnerCampusAdmin = $user?->role === 'campus_admin' && $user->campus_id === $campus->id;
+
+        if (!$isSuperAdmin && !$isOwnerCampusAdmin) {
+            abort(403, 'You do not have permission to update this campus.');
+        }
+
         $this->validateLocation($request, $campus->id);
 
         try {
@@ -310,7 +323,7 @@ class LocationController extends Controller
     }
 
     public function index()
-    {
+    {   
         $campuses = cache()->remember('locations-tree', now()->addHours(6), function () {
             return Campus::with(['colleges.programs.categories', 'policy'])->get()->toArray();
         });

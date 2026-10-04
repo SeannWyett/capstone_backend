@@ -49,4 +49,9 @@ class User extends Authenticatable implements PasskeyUser, MustVerifyEmail
         ];
     }
 
+    public function campus()
+    {
+        return $this->belongsTo(Campus::class);
+    }
+
 }

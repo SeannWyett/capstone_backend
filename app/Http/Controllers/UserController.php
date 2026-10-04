@@ -24,6 +24,14 @@ class UserController extends Controller
             'campus_id' => 'required|exists:campuses,id',
         ]);
 
+        $existingAdmin = User::where('role', 'campus_admin')
+            ->where('campus_id', $validated['campus_id'])
+            ->exists();
+
+        if ($existingAdmin) {
+            return response()->json(['message' => 'A campus admin already exists for this campus.'], 400);
+        }
+
         $admin = User::create([
             'name' => $validated['name'],
             'username' => $validated['username'],
@@ -45,7 +53,7 @@ class UserController extends Controller
             abort(403, 'Only a Super Admin can view all users.');
         }
 
-        $query = User::query();
+        $query = User::where('role', '!=', 'super_admin');
 
         if ($request->filled('role')) {
             $query->where('role', $request->role);
@@ -59,9 +67,49 @@ class UserController extends Controller
 
         $users = $query
             ->with('campus:id,name') // Eager load campus relationship
-            ->paginate($perPage, ['id', 'name', 'username', 'email', 'role']);
+            ->paginate($perPage, ['id', 'name', 'username', 'email', 'role', 'campus_id']);
 
         return response()->json($users);
+    }
+
+    public function show(Request $request, $id)
+    {
+        if ($request->user()?->role !== 'super_admin') {
+            abort(403, 'Only a Super Admin can view user details.');
+        }
+
+        $user = User::with('campus:id,name')->findOrFail($id);
+
+        return response()->json($user);
+    }
+
+    public function update(Request $request, $id)
+    {
+        if ($request->user()?->role !== 'super_admin') {
+            abort(403, 'Only a Super Admin can update user accounts.');
+        }
+
+        $user = User::findOrFail($id);
+
+        $validated = $request->validate([
+            'name' => 'sometimes|required|string|max:255',
+            'username' => 'sometimes|required|string|max:255|unique:users,username,' . $user->id,
+            'email' => 'sometimes|nullable|email|unique:users,email,' . $user->id,
+            'password' => ['sometimes', 'required', 'confirmed', Password::min(8)],
+            'role' => 'sometimes|required|in:student,campus_admin',
+            'campus_id' => 'sometimes|required|exists:campuses,id',
+        ]);
+
+        if (isset($validated['password'])) {
+            $validated['password'] = Hash::make($validated['password']);
+        }
+
+        $user->update($validated);
+
+        return response()->json([
+            'message' => 'User account updated successfully.',
+            'user' => $user
+        ]);
     }
 
     public function destroy(Request $request, $id)
