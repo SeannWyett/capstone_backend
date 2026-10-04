@@ -73,30 +73,35 @@ class StudentRegisterController extends Controller
 
     public function verify(Request $request, $id, $hash)
     {   
-        if (!$request->hasValidSignature()) {
-            return response()->json([
-                'message' => 'Invalid or expired verification link.'
-                ], 403);
-        }
+        return response()->json([
+            'url_received_by_laravel' => $request->fullUrl(),
+            'signature_is_valid' => $request->hasValidSignature(),
+        ]);
 
-        $user = User::findOrFail($id);
+        // if (!$request->hasValidSignature()) {
+        //     return response()->json([
+        //         'message' => 'Invalid or expired verification link.'
+        //         ], 403);
+        // }
 
-        if (!hash_equals($hash, sha1($user->getEmailForVerification()))) {
-            return response()->json([
-                'message' => 'Invalid verification link.'
-                ], 403);
-        }
+        // $user = User::findOrFail($id);
 
-        if ($user->hasVerifiedEmail()) {
-            return response()->json([
-                'message' => 'Email already verified.'
-                ], 400);
-        }
+        // if (!hash_equals($hash, sha1($user->getEmailForVerification()))) {
+        //     return response()->json([
+        //         'message' => 'Invalid verification link.'
+        //         ], 403);
+        // }
 
-        $user->markEmailAsVerified();
+        // if ($user->hasVerifiedEmail()) {
+        //     return response()->json([
+        //         'message' => 'Email already verified.'
+        //         ], 400);
+        // }
 
-        event(new Verified($user));
+        // $user->markEmailAsVerified();
 
-        return response()->json(['message' => 'Email verified successfully. You can now log in.']);
+        // event(new Verified($user));
+
+        // return response()->json(['message' => 'Email verified successfully. You can now log in.']);
     }
 }
