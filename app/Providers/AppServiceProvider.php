@@ -10,9 +10,6 @@ use App\Policies\PaperUploadPolicy;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Config;
-
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -38,6 +35,7 @@ class AppServiceProvider extends ServiceProvider
         }
 
         VerifyEmail::createurlUsing(function ($notifiable) {
+            URL::forceRootUrl(config('app.url'));
             $id = $notifiable->getKey();
             $hash = sha1($notifiable->getEmailForVerification());
 
@@ -46,11 +44,6 @@ class AppServiceProvider extends ServiceProvider
                 now()->addMinutes(60),
                 ['id' => $id, 'hash' => $hash]
             );
-
-            Log::info('Generated backend verification URL', [
-                'url' => $backendUrl,
-                'app_url' => config('app.url'),
-                ]);
 
             $query = parse_url($backendUrl, PHP_URL_QUERY);
 

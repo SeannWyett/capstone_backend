@@ -25,30 +25,6 @@ Route::get('/email/verify/{id}/{hash}', [StudentRegisterController::class, 'veri
     ->name('api.verification.verify');
 
 Route::post('email/resend', [StudentRegisterController::class, 'resend']);
-Route::get('/debug-verification-url/{id}', function ($id) {
-
-    $user = \App\Models\User::findOrFail($id);
-
-    \Illuminate\Support\Facades\URL::forceRootUrl(
-        config('app.url')
-    );
-
-    $hash = sha1($user->getEmailForVerification());
-
-    $url = \Illuminate\Support\Facades\URL::temporarySignedRoute(
-        'api.verification.verify',
-        now()->addMinutes(60),
-        [
-            'id' => $user->id,
-            'hash' => $hash,
-        ]
-    );
-
-    return response()->json([
-        'app_url' => config('app.url'),
-        'generated_url' => $url,
-    ]);
-});
 
 //Public Routes
 
