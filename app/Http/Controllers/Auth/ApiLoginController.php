@@ -11,12 +11,16 @@ class ApiLoginController extends Controller
 {
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'username' => ['required', 'string'],
+        $request->validate([
+            'login' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        if (!Auth::attempt($credentials)) {
+        $loginInput = $request->input('login');
+
+        $field = filter_var($loginInput, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';
+
+        if (!Auth::attempt([$field => $loginInput, 'password' => $request->input('password')])) {
             return response()->json([
                 'message' => 'Invalid credentials',
             ], 401);

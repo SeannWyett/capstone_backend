@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Auth\Events\Verified;    
 
 
 
@@ -16,7 +17,15 @@ class StudentRegisterController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'username' => 'required|string|max:10|unique:users,username',
+            'username' => [
+                'required', 'string', 'max:255', 'unique:users,username',
+                'regex:/^[a-zA-Z0-9_.-]+$/',
+                function ($attribute, $value, $fail) {
+                    if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        $fail('The Username must not be in email format.');
+                    }
+                }
+            ],
             'email' => [
                 'required', 'email', 'unique:users,email',
                 'regex:/^[\w.+-]+@sorsu\.edu\.ph$/i',
@@ -38,12 +47,6 @@ class StudentRegisterController extends Controller
 
         event(new \Illuminate\Auth\Events\Registered($student));
 
-        event(new \Illuminate\Auth\Events\Registered($student));
-
-        \Log::info('Registered event fired for user: ' . $student->id);
-        \Log::info('User implements MustVerifyEmail: ' . ($student instanceof \Illuminate\Contracts\Auth\MustVerifyEmail ? 'yes' : 'no'));
-        \Log::info('User email value: ' . ($student->email ?? 'NULL'));
-
         return response()->json([
             'message' => 'Registrations successful. Please check your email to verify your account before logging in.',
         ], 201);
@@ -63,6 +66,26 @@ class StudentRegisterController extends Controller
 
         $user->sendEmailVerificationNotification();
 
-        return response()->json(['message' => 'Verification email resent.']);
+        return response()->json([
+            'message' => 'Verification email resent.',
+            ]);
+    }
+
+    public function verify(Request $request, $id, $hash)
+    {
+        $user = User::findOrFail($id);
+
+        if (!hash_equals($hash, sha1($user->getEmailForVerification()))) {
+            return response()->json(['message' => 'Invalid verification link.'], 403);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json(['message' => 'Email already verified.']);
+        }
+
+        $user->markEmailAsVerified();
+        event(new Verified($user));
+
+        return response()->json(['message' => 'Email verified successfully. You can now log in.']);
     }
 }

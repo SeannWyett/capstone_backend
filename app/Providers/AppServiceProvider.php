@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Gate;
 use Illuminate\Auth\Notifications\VerifyEmail;
 use Illuminate\Notifications\Messages\MailMessage;
 
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -39,7 +40,7 @@ class AppServiceProvider extends ServiceProvider
             $hash = sha1($notifiable->getEmailForVerification());
 
             $backendUrl = URL::temporarySignedRoute(
-                'verification.verify',
+                'api.verification.verify',
                 now()->addMinutes(60),
                 ['id' => $id, 'hash' => $hash]
             );
@@ -50,5 +51,16 @@ class AppServiceProvider extends ServiceProvider
         });
 
         Gate::policy(PaperUploads::class, PaperUploadPolicy::class);
+
+        ResetPassword::toMailUsing(function ($notifiable, string $token) {
+            $frontendUrl = rtrim(config('app.frontend_url'), '/');
+            return "{$frontendUrl}/reset-password?token={$token}&email=" . urlencode($notifiable->getEmailForPasswordReset());
+        });
+        //     return (new MailMessage)
+        //         ->subject('Reset Your Password')
+        //         ->line('You are receiving this email because we received a password reset request for your account.')
+        //         ->action('Reset Password', config('app.frontend_url')."/password-reset/$token?email={$notifiable->getEmailForPasswordReset()}")
+        //         ->line('If you did not request a password reset, no further action is required.');
+        // });
     }
 }
