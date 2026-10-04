@@ -308,4 +308,31 @@ class PaperController extends Controller
             ->header('Content-Type', Storage::disk($disk)->mimeType($path))
             ->header('Content-Disposition', 'inline; filename="' . $paperUpload->original_filename . '"');
     }
+
+    public function campusAdmindashboard(Request $request)
+    {
+        $user = $request->user();
+        
+        if (!in_array($user->role, ['campus_admin', 'super_admin'])) {
+            abort(403, 'You do not have permission to access this dashboard.');
+        }
+
+        $query = $this->paperQuery($request)
+            ->with([
+                'campus:id,name',
+                'college:id,name',
+                'program:id,name',
+                'category:id,name'
+            ]);
+
+        if ($user->role === 'campus_admin') {
+            $query->where('campus_id', $user->campus_id);
+        }
+
+        $perPage = min($request->integer('per_page', 5), 10);
+
+        $papers = $query->paginate($perPage);
+
+        return response()->json($papers);
+    }
 }
