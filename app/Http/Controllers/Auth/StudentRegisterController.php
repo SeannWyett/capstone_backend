@@ -71,32 +71,57 @@ class StudentRegisterController extends Controller
             ]);
     }
 
+    // public function verify(Request $request, $id, $hash)
+    // {   
+    //     if (!$request->hasValidSignature()) {
+    //         return response()->json([
+    //             'message' => 'Invalid or expired verification link.'
+    //             ], 403);
+    //     }
+
+    //     $user = User::findOrFail($id);
+
+    //     if (!hash_equals($hash, sha1($user->getEmailForVerification()))) {
+    //         return response()->json([
+    //             'message' => 'Invalid verification link.'
+    //             ], 403);
+    //     }
+
+    //     if ($user->hasVerifiedEmail()) {
+    //         return response()->json([
+    //             'message' => 'Email already verified.'
+    //             ], 400);
+    //     }
+
+    //     $user->markEmailAsVerified();
+
+    //     event(new Verified($user));
+
+    //     return response()->json(['message' => 'Email verified successfully. You can now log in.']);
+    // }
+
     public function verify(Request $request, $id, $hash)
-    {   
-        if (!$request->hasValidSignature()) {
-            return response()->json([
-                'message' => 'Invalid or expired verification link.'
-                ], 403);
-        }
+    {
+        return response()->json([
+            'debug' => true,
 
-        $user = User::findOrFail($id);
+            'request_url' => $request->fullUrl(),
 
-        if (!hash_equals($hash, sha1($user->getEmailForVerification()))) {
-            return response()->json([
-                'message' => 'Invalid verification link.'
-                ], 403);
-        }
+            'request_scheme' => $request->getScheme(),
 
-        if ($user->hasVerifiedEmail()) {
-            return response()->json([
-                'message' => 'Email already verified.'
-                ], 400);
-        }
+            'request_host' => $request->getHost(),
 
-        $user->markEmailAsVerified();
-        
-        event(new Verified($user));
+            'app_url' => config('app.url'),
 
-        return response()->json(['message' => 'Email verified successfully. You can now log in.']);
+            'has_valid_signature' => $request->hasValidSignature(),
+
+            'expires' => $request->query('expires'),
+
+            'signature' => $request->query('signature'),
+
+            'id' => $id,
+
+            'hash' => $hash,
+        ]);
     }
 }
