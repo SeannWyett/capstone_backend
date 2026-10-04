@@ -21,7 +21,7 @@ Route::post('/reset-password', [PasswordResetController::class, 'resetPassword']
 
 //Email Verification Routes
 Route::get('/email/verify/{id}/{hash}', [StudentRegisterController::class, 'verify'])
-    // ->middleware(['signed'])
+    ->middleware(['signed'])
     ->name('api.verification.verify');
 
 Route::post('email/resend', [StudentRegisterController::class, 'resend']);
@@ -59,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/papers', [PaperController::class, 'store']);
     Route::put('/papers/{id}', [PaperController::class, 'update']);
     Route::delete('/papers/{id}', [PaperController::class, 'destroy']);
+    Route::get('/papers/admin', [PaperController::class, 'campusAdmindashboard']);
     
     //location routes
     Route::post('/locations', [LocationController::class, 'addLocation']);
