@@ -56,10 +56,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/logout', [ApiLoginController::class, 'logout']);
     
     //Paper routes
+    Route::get('/admin/papers', [PaperController::class, 'campusAdmindashboard']);
     Route::post('/papers', [PaperController::class, 'store']);
     Route::put('/papers/{id}', [PaperController::class, 'update']);
     Route::delete('/papers/{id}', [PaperController::class, 'destroy']);
-    Route::get('/admin/papers', [PaperController::class, 'campusAdmindashboard']);
     
     //location routes
     Route::post('/locations', [LocationController::class, 'addLocation']);
