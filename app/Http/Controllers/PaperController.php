@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
+use Laravel\Sanctum\PersonalAccessToken;
 
 
 class PaperController extends Controller
@@ -188,12 +189,17 @@ class PaperController extends Controller
         return response()->json(['message' => 'Paper uploaded successfully', 'data' => $paperUpload], 201);
     }
 
-    public function show($id)
+    public function show(Request $request, $id)
     {   
         $paperUpload = PaperUploads::with(['campus.policy','campus:id,name', 'college:id,name', 'program:id,name', 'category:id,name'])
             ->findOrFail($id);
-        
-        if (Gate::denies('viewMetadata', $paperUpload)) {
+
+        $user = null;
+        if ($token = $request->bearerToken()) {
+            $accessToken = PersonalAccessToken::findToken($token);
+            $user = $accessToken?->tokenable;
+        }
+        if (Gate::forUser($user)->denies('viewMetadata', $paperUpload)) {
             return response()->json(['message' => 'You are not allowed to view this paper metadata'], 403);
         }
 
@@ -289,11 +295,16 @@ class PaperController extends Controller
         return response()->json(['message' => 'View count incremented successfully', 'views_count' => $paper->views_count]);
     }
     
-    public function viewFile(PaperUploads $paperUpload)
+    public function viewFile(Request $request, PaperUploads $paperUpload)
     {   
         $paperUpload->load('campus.policy'); // Eager load the campus and its policy
 
-        if (!Gate::allows('viewFile', $paperUpload)) {
+        $user = null;
+        if ($token = $request->bearerToken()) {
+            $accessToken = PersonalAccessToken::findToken($token);
+            $user = $accessToken?->tokenable;
+        }
+        if (Gate::forUser($user)->denies('viewMetadata', $paperUpload)) {
             return response()->json(['message' => 'You are not allowed to view this file'], 403);
         }
 
