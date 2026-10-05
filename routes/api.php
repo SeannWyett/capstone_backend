@@ -30,7 +30,7 @@ Route::post('email/resend', [StudentRegisterController::class, 'resend']);
 
 //Users
 Route::get('/users', function (Request $request) {
-    return $request->user();
+    return $request->user()->load('campus');
 })->middleware('auth:sanctum');
 
 
@@ -59,7 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/papers', [PaperController::class, 'store']);
     Route::put('/papers/{id}', [PaperController::class, 'update']);
     Route::delete('/papers/{id}', [PaperController::class, 'destroy']);
-    Route::get('/papers/admin', [PaperController::class, 'campusAdmindashboard']);
+    Route::get('/admin/papers', [PaperController::class, 'campusAdmindashboard']);
     
     //location routes
     Route::post('/locations', [LocationController::class, 'addLocation']);
@@ -73,19 +73,4 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/users/{id}', [UserController::class, 'show']);
     Route::put('/admin/users/{id}', [UserController::class, 'update']);
     Route::delete('/admin/users/{id}', [UserController::class, 'destroy']);
-    
-    // Route::post('/campus', [LocationController::class, 'addCampus']);
-    // Route::put('/campus/{id}', [LocationController::class, 'updateCampus']);
-    // Route::delete('/campus/{id}', [LocationController::class, 'destroyCampus']);
-    // Route::post('/college', [LocationController::class, 'addCollege']);
-    // Route::put('/college/{id}', [LocationController::class, 'updateCollege']);
-    // Route::delete('/college/{id}', [LocationController::class, 'destroyCollege']);
-    // Route::post('/program', [LocationController::class, 'addProgram']);
-    // Route::put('/program/{id}', [LocationController::class, 'updateProgram']);
-    // Route::delete('/program/{id}', [LocationController::class, 'destroyProgram']);
-
-    //category routes
-    // Route::post('/category', [CategoryController::class, 'store']);
-    // Route::put('/category/{id}', [CategoryController::class, 'update']);
-    // Route::delete('/category/{id}', [CategoryController::class, 'destroy']);
 });
