@@ -16,6 +16,17 @@ use Laravel\Sanctum\PersonalAccessToken;
 
 class PaperController extends Controller
 {
+    private function filterValues(Request $request, string $key): array
+    {
+        $value = $request->input($key);
+
+        if (is_array($value)) {
+            return $value;
+        }
+
+        return explode(',', $value);
+    }
+
     private function paperQuery(Request $request)
     {
         $query = PaperUploads::query();
@@ -35,19 +46,34 @@ class PaperController extends Controller
 
         //filtering by campus, college, program, year, and paper_type
         if ($request->filled('campus_id')) {
-            $query->where('campus_id', $request->campus_id);
+            $query->whereIn(
+                'campus_id', 
+                $this->filterValues($request, 'campus_id')
+            );
         }
         if ($request->filled('college_id')) {
-            $query->where('college_id', $request->college_id);
+            $query->whereIn(
+                'college_id', 
+                $this->filterValues($request, 'college_id')
+            );
         }
         if ($request->filled('program_id')) {
-            $query->where('program_id', $request->program_id);
+            $query->whereIn(
+                'program_id', 
+                $this->filterValues($request, 'program_id')
+            );
         }
         if ($request->filled('year')) {
-            $query->where('year', $request->year);
+            $query->whereIn(
+                'year', 
+                $this->filterValues($request, 'year')
+            );
         }
         if ($request->filled('paper_type')) {
-            $query->where('paper_type', $request->paper_type);
+            $query->whereIn(
+                'paper_type', 
+                $this->filterValues($request, 'paper_type')
+            );
         }
 
         return $query;
@@ -203,7 +229,7 @@ class PaperController extends Controller
             return response()->json(['message' => 'You are not allowed to view this paper metadata'], 403);
         }
 
-        return response()->json($paperUpload);
+        return response()->json(['data' => $paperUpload]);
     }
 
     public function update(StorePaperRequest $request, HandlesPapersUploads $uploader, $id)
