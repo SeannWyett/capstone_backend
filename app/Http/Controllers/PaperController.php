@@ -19,7 +19,7 @@ class PaperController extends Controller
     private function filterValues(Request $request, string $key): array
     {
         $value = $request->input($key);
-
+        
         if (is_array($value)) {
             return $value;
         }
@@ -73,6 +73,13 @@ class PaperController extends Controller
             $query->whereIn(
                 'paper_type', 
                 $this->filterValues($request, 'paper_type')
+            );
+        }
+
+        if ($request->filled('category_id')) {
+            $query->weherIn(
+                'category_id',
+                $this->filterValues($request, 'category_id')
             );
         }
 
@@ -168,6 +175,14 @@ class PaperController extends Controller
                         ];
                     })
                     ->toArray();
+
+                $papersBytype_per_campus = PaperUploads::select('campus_id', 'paper_type', DB::raw('count(*) as total'))
+                    ->groupBy('campus_id', 'paper_type')
+                    ->with('campus:id,name')
+                    ->get()
+                    ->groupBy(fn ($row) => $row->campus->name ?? 'Unknown')
+                    ->map(fn ($row) => $row->pluck('total', 'paper_type'))
+                    ->toArray();
                 
                 return response()->json([
                     'total_papers' => PaperUploads::count(),
@@ -179,6 +194,7 @@ class PaperController extends Controller
                     'papers_by_year' => $papersByYear,
                     'papers_by_category' => $papersByCategory,
                     'most_viewed_papers' => $mostViewedPapers,
+                    'papers_by_campus_and_type' => $papersBytype_per_campus,
                 ]);
             // })
         // );
