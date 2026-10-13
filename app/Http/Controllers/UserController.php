@@ -22,6 +22,7 @@ class UserController extends Controller
             'email' => 'nullable|email|unique:users,email',
             'password' => ['required', 'confirmed', Password::min(8)],
             'campus_id' => 'required|exists:campuses,id',
+            'status' => 'active',
         ]);
 
         $existingAdmin = User::where('role', 'campus_admin')
@@ -67,7 +68,7 @@ class UserController extends Controller
 
         $users = $query
             ->with('campus:id,name') // Eager load campus relationship
-            ->paginate($perPage, ['id', 'name', 'username', 'email', 'role', 'campus_id']);
+            ->paginate($perPage, ['id', 'name', 'username', 'email', 'role', 'campus_id', 'status']);
 
         return response()->json($users);
     }
@@ -91,6 +92,10 @@ class UserController extends Controller
 
         $user = User::findOrFail($id);
 
+        if ($user->role === 'super_admin') {
+            abort(403, 'Super admin accounts cannot be modified here.');
+        }
+
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'username' => 'sometimes|required|string|max:255|unique:users,username,' . $user->id,
@@ -98,6 +103,7 @@ class UserController extends Controller
             'password' => ['sometimes', 'required', 'confirmed', Password::min(8)],
             'role' => 'sometimes|required|in:student,campus_admin',
             'campus_id' => 'sometimes|required|exists:campuses,id',
+            'status' => 'sometimes|required|in:active,inactive'
         ]);
 
         if (isset($validated['password'])) {
@@ -105,6 +111,10 @@ class UserController extends Controller
         }
 
         $user->update($validated);
+
+        if (($validated['status'] ?? null) === 'inactive') {
+            $user->tokens()->delete();
+        }
 
         return response()->json([
             'message' => 'User account updated successfully.',

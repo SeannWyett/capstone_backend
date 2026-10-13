@@ -95,6 +95,10 @@ class StudentRegisterController extends Controller
 
         $user->markEmailAsVerified();
 
+        if ($user->status === 'pending_email_verification') {
+            $user->update(['status' => 'active']);
+        }
+
         event(new Verified($user));
 
         return response()->json(['message' => 'Email verified successfully. You can now log in.']);
