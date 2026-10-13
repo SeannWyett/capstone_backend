@@ -28,6 +28,13 @@ class ApiLoginController extends Controller
 
         $user = Auth::user();
 
+        if ($user->status === 'inactive') {
+            Auth::Logout();
+            return response()->json([
+                'message' => 'Your account has beed deactivated.',
+            ], 403);
+        }
+
         if ($user->role === 'student' && !$user->hasVerifiedEmail()) {
             Auth::logout();
             return response()->json([
