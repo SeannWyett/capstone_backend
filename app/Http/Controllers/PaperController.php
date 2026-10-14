@@ -389,3 +389,13 @@ class PaperController extends Controller
         return response()->json($papers);
     }
 }
+                
+
+
+
+
+
+
+
+
+
