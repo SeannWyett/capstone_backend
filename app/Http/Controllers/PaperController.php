@@ -77,7 +77,7 @@ class PaperController extends Controller
         }
 
         if ($request->filled('category_id')) {
-            $query->weherIn(
+            $query->whereIn(
                 'category_id',
                 $this->filterValues($request, 'category_id')
             );
