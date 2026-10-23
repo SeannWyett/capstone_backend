@@ -52,8 +52,9 @@ class AppServiceProvider extends ServiceProvider
 
         Gate::policy(PaperUploads::class, PaperUploadPolicy::class);
 
-        ResetPassword::toMailUsing(function ($notifiable, string $token) {
+        ResetPassword::createUrlUsing(function ($notifiable, string $token) {
             $frontendUrl = rtrim(config('app.frontend_url'), '/');
+            
             return "{$frontendUrl}/reset-password?token={$token}&email=" . urlencode($notifiable->getEmailForPasswordReset());
         });
         //     return (new MailMessage)
