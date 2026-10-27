@@ -99,6 +99,9 @@ class StudentRegisterController extends Controller
             $user->update(['status' => 'active']);
         }
 
+        $user->must_change_credentials = false; 
+        $user->save();
+
         event(new Verified($user));
 
         return response()->json(['message' => 'Email verified successfully. You can now log in.']);

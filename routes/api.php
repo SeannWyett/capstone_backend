@@ -54,18 +54,9 @@ Route::middleware('auth:sanctum')->group(function () {
     
     //Auth
     Route::post('/logout', [ApiLoginController::class, 'logout']);
-    
-    //Paper routes
-    Route::get('/admin/papers', [PaperController::class, 'campusAdmindashboard']);
-    Route::post('/papers', [PaperController::class, 'store']);
-    Route::put('/papers/{id}', [PaperController::class, 'update']);
-    Route::delete('/papers/{id}', [PaperController::class, 'destroy']);
-    
-    //location routes
-    Route::post('/locations', [LocationController::class, 'addLocation']);
-    Route::put('/locations/{id}', [LocationController::class, 'updateLocation']);
-    Route::delete('/campus/{id}', [LocationController::class, 'destroyCampus']);
-    
+    Route::post('/account/setup-credentials', [UserController::class, 'setupCredentials']);
+        //->middleware('throttle:5,1');
+
     //superadmin routes
     Route::post('/admin/campus-admins', [UserController::class, 'createCampusAdmin']);
     Route::get('/admin/users', [UserController::class, 'index']);
@@ -73,4 +64,21 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/admin/users/{id}', [UserController::class, 'show']);
     Route::put('/admin/users/{id}', [UserController::class, 'update']);
     Route::delete('/admin/users/{id}', [UserController::class, 'destroy']);
+    
+    //campus_admin(need credentials setup first) and superadmin routes
+    Route::middleware('credentials.setup')->group(function () {
+        
+        //Paper routes
+        Route::get('/admin/papers', [PaperController::class, 'campusAdmindashboard']);
+        Route::post('/papers', [PaperController::class, 'store']);
+        Route::put('/papers/{id}', [PaperController::class, 'update']);
+        Route::delete('/papers/{id}', [PaperController::class, 'destroy']);
+        
+        //location routes
+        Route::post('/locations', [LocationController::class, 'addLocation']);
+        Route::put('/locations/{id}', [LocationController::class, 'updateLocation']);
+        Route::delete('/campus/{id}', [LocationController::class, 'destroyCampus']);
+    });
 });
+    
+    

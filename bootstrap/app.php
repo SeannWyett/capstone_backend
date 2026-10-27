@@ -20,6 +20,7 @@ return Application::configure(basePath: dirname(__DIR__))
     
         $middleware->alias([
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'credentials.setup' => \App\Http\Middleware\EnsureCredentialSetup::class,
         ]);
 
         $middleware->encryptCookies(except: ['appearance', 'sidebar_state']);

@@ -19,10 +19,8 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => 'required|string|max:255',
             'username' => 'required|string|max:255|unique:users,username',
-            'email' => 'nullable|email|unique:users,email',
             'password' => ['required', 'confirmed', Password::min(8)],
             'campus_id' => 'required|exists:campuses,id',
-            'status' => 'active',
         ]);
 
         $existingAdmin = User::where('role', 'campus_admin')
@@ -36,10 +34,11 @@ class UserController extends Controller
         $admin = User::create([
             'name' => $validated['name'],
             'username' => $validated['username'],
-            'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
             'role' => 'campus_admin',
             'campus_id' => $validated['campus_id'],
+            'status' => 'active',
+            'must_change_credentials' => true,
         ]);
 
         return response()->json([
@@ -137,5 +136,55 @@ class UserController extends Controller
         $user->delete();
 
         return response()->json(['message' => 'User deleted successfully']);
+    }
+
+    public function setupCredentials(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user->must_change_credentials) {
+            abort(403, 'Credentials have already been set up.');
+        }
+
+        $validated = $request->validate([
+            'current_password' => ['required', 'string'],
+            'username' => [
+                'required', 'string', 'max:255', 'unique:users,username',
+                'regex:/^[a-zA-Z0-9_.-]+$/',
+                function ($attribute, $value, $fail) {
+                    if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+                        $fail('The Username must not be in email format.');
+                    }
+                }
+            ],
+            'email' => [
+                'required', 'email', 'unique:users,email',
+                'regex:/^[\w.+-]+@sorsu\.edu\.ph$/i',
+            ],
+            'password' => ['required', 'confirmed', Password::min(8)],
+        ]);
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return response()->json(['message' => 'The temporary password is incorrect.'], 422);
+        }
+
+        if (Hash::check($validated['password'], $user->password)) {
+            return response()->json(['message' => 'Your new password must be different from the temporary one.'], 422);
+        }
+
+        $user->forcefill([
+            'username' => $validated['username'],
+            'email' => $validated['email'],
+            'password' => Hash::make($validated['password']),
+            'email_verified_at' => null,
+        ])->save();
+
+        $user->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id)->delete();
+
+        $user->sendEmailVerificationNotification();
+
+        return response()->json([
+            'message' => 'Check your email and click the verification link to finish setting up your account.',
+        ]);
     }
 }
