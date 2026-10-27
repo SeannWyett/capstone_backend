@@ -15,6 +15,8 @@ use Laravel\Fortify\PasskeyAuthenticatable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
+use function Aws\boolean_value;
+
 /**
  * @property int $id
  * @property string $name
@@ -28,7 +30,7 @@ use Laravel\Sanctum\HasApiTokens;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-#[Fillable(['name', 'username', 'email', 'password', 'role', 'campus_id', 'status'])]
+#[Fillable(['name', 'username', 'email', 'password', 'role', 'campus_id', 'status', 'must_change_credentials'])]
 #[Hidden(['password', 'two_factor_secret', 'two_factor_recovery_codes', 'remember_token'])]
 class User extends Authenticatable implements PasskeyUser, MustVerifyEmail
 {
@@ -46,6 +48,7 @@ class User extends Authenticatable implements PasskeyUser, MustVerifyEmail
             'password' => 'hashed',
             'email_verified_at' => 'datetime',
             'two_factor_confirmed_at' => 'datetime',
+            'must_change_credentials' => 'boolean'
         ];
     }
 
