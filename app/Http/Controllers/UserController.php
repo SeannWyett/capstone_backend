@@ -148,6 +148,7 @@ class UserController extends Controller
 
         $validated = $request->validate([
             'current_password' => ['required', 'string'],
+            'name' => 'nullable|string|max:255',
             'username' => [
                 'required', 'string', 'max:255', 'unique:users,username',
                 'regex:/^[a-zA-Z0-9_.-]+$/',
@@ -173,6 +174,7 @@ class UserController extends Controller
         }
 
         $user->forcefill([
+            'name' => $validated['name'],
             'username' => $validated['username'],
             'email' => $validated['email'],
             'password' => Hash::make($validated['password']),
