@@ -43,6 +43,10 @@ class StorePaperRequest extends FormRequest
                 'nullable',
                 'integer',
                 'exists:campuses,id',
+
+                    ...($isCampusAdmin
+                        ? [Rule::in([(int) $this->user()->campus_id])]
+                        : []),
             ],
 
             // Adjust the column names to your schema

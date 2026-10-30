@@ -218,14 +218,6 @@ class PaperController extends Controller
                 403,
                 'Your account is not assigned to a campus.'
             );
-
-            abort_if(
-                isset($validated['campus_id']) && (int) $validated['campus_id'] !== (int) $user->campus_id,
-                403,
-                'You can only add papers for your own campus.'
-            );
-
-            $validated['campus_id'] = $user->campus_id;
         }
 
         $filedata = $uploader->storefile(
@@ -302,14 +294,6 @@ class PaperController extends Controller
                 403,
                 'Your account is not assigned to a campus.'
             );
-
-            abort_if(
-                isset($attributes['campus_id']) && (int) $attributes['campus_id'] !== (int) $user->campus_id,
-                403,
-                'You cant change what campus the paper belongs to.'
-            );
-
-            $attributes['campus_id'] = $user->campus_id;
         }
 
         $oldPath = $paperUpload->file_url;
