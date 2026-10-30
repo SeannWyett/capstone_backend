@@ -43,7 +43,6 @@ class StorePaperRequest extends FormRequest
                 'nullable',
                 'integer',
                 'exists:campuses,id',
-
                     ...($isCampusAdmin
                         ? [Rule::in([(int) $this->user()->campus_id])]
                         : []),
@@ -53,14 +52,16 @@ class StorePaperRequest extends FormRequest
             'college_id' => [
                 'required', 'integer',
                 Rule::exists('colleges', 'id')->where(
-                    fn ($q) => $isCampusAdmin
-                        ? $q->where('campus_id', $this->user()->campus_id)
-                        : ($this->filled('campus_id') ? $q->where('campus_id', $this->input('campus_id')) : $q)
+                    'campus_id',
+                    $this->input('campus_id')
                 ),
             ],
             'program_id' => [
                 'required', 'integer',
-                Rule::exists('programs', 'id')->where('college_id', $this->input('college_id')),
+                Rule::exists('programs', 'id')->where(
+                    'college_id', 
+                    $this->input('college_id')
+                ),
             ],
             'category_id' => 'nullable|integer|exists:categories,id',
             'researchers' => 'required|string|max:255',
