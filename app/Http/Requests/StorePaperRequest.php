@@ -4,6 +4,8 @@ namespace App\Http\Requests;
 
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\PaperUploads;
+use Illuminate\Validation\Rule;
 
 class StorePaperRequest extends FormRequest
 {
@@ -12,15 +14,9 @@ class StorePaperRequest extends FormRequest
      */
     public function authorize(): bool
     {
-        // $user = $this->user();
-
-        // if ($user && $user->role === 'admin') { // Check if the user is authenticated and has the 'admin' role
-        //     return true;
-        // } else {
-        //     return false;
-        // }
-
-        return true; // Change this to true if you want to allow all users to make this request
+        return $this->isMethod('POST')
+            ? ($this->user()?->can('create', PaperUploads::class) ?? false)
+            : $this->user() !== null; // Change this to true if you want to allow all users to make this request
     }
 
     /**
@@ -30,19 +26,38 @@ class StorePaperRequest extends FormRequest
      */
     public function rules(): array
     {
+        $isUpdate = $this->isMethod('PUT') || $this->isMethod('PATCH');
+        $isCampusAdmin = $this->user()?->role === 'campus_admin';
+
         return [
             'title' => 'required|string|max:255',
             'paper_type' => 'required|in:capstone,thesis', // Ensure paper_type is one of the allowed values
             'abstract' => 'nullable|string',
             // 'file_url' => 'required|string|max:255',
-            'file_size' => 'nullable|integer',
             'year' => 'required|integer',
             // 'campus' => 'required|string|max:255',
             // 'department' => 'required|string|max:255',
             // 'course' => 'required|string|max:255',
-            'campus_id' => 'required|integer|exists:campuses,id',
-            'college_id' => 'required|integer|exists:colleges,id',
-            'program_id' => 'required|integer|exists:programs,id',
+            'campus_id' => [
+                Rule::requiredIf(! $isCampusAdmin),
+                'nullable',
+                'integer',
+                'exists:campuses,id',
+            ],
+
+            // Adjust the column names to your schema
+            'college_id' => [
+                'required', 'integer',
+                Rule::exists('colleges', 'id')->where(
+                    fn ($q) => $isCampusAdmin
+                        ? $q->where('campus_id', $this->user()->campus_id)
+                        : ($this->filled('campus_id') ? $q->where('campus_id', $this->input('campus_id')) : $q)
+                ),
+            ],
+            'program_id' => [
+                'required', 'integer',
+                Rule::exists('programs', 'id')->where('college_id', $this->input('college_id')),
+            ],
             'category_id' => 'nullable|integer|exists:categories,id',
             'researchers' => 'required|string|max:255',
             'file' => $this->isMethod('PUT') || $this->isMethod('PATCH')

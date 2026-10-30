@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 use Laravel\Sanctum\PersonalAccessToken;
+use Illuminate\Support\Facades\Log;
+use Throwable;
+use Illuminate\Support\Arr;
+use App\Http\Resources\PaperDisplayResource;
 
 
 class PaperController extends Controller
@@ -205,30 +209,65 @@ class PaperController extends Controller
     {
         Gate::authorize('create', PaperUploads::class); 
 
+        $user = $request->user();
         $validated = $request->validated();
-        $file = $request->file('file');
-        $filedata = null;
 
-        
-        try {
-            $filedata = $uploader->storefile(
-                $file,
-                $validated['campus_id'],
-                $validated['college_id'],
-                $validated['program_id']
+        if ($user->role === 'campus_admin') {
+            abort_if(
+                $user->campus_id === null,
+                403,
+                'Your account is not assigned to a campus.'
             );
 
-            $paperUpload = PaperUploads::create(array_merge($validated, $filedata));
-        } catch (\Exception $e) {
-            // If there's an error during the database operation, delete the uploaded file
-            if ($filedata && Storage::disk(config('filesystems.default'))->exists($filedata['file_url'])) {
-                Storage::disk(config('filesystems.default'))->delete($filedata['file_url']);
-            }
-            return response()->json(['message' => 'Failed to upload paper', 'error' => $e->getMessage()], 500);
+            abort_if(
+                isset($validated['campus_id']) && (int) $validated['campus_id'] !== (int) $user->campus_id,
+                403,
+                'You can only add papers for your own campus.'
+            );
+
+            $validated['campus_id'] = $user->campus_id;
+        }
+
+        $filedata = $uploader->storefile(
+            $request->file('file'),
+            $validated['campus_id'],
+            $validated['college_id'],
+            $validated['program_id']
+        );
+
+        try {
+            $paperUpload = DB::transaction(fn () => PaperUploads::create([
+                ...Arr::except($validated, ['file']),
+                'file_url' => $filedata['file_url'],
+                'original_filename' => $filedata['original_filename'],
+                'file_size' => $filedata['file_size'],  
+            ]));
+        } catch (Throwable $e) {
+            $this->cleanupFile($filedata['file_url'] ?? null);
+
+            report($e); // goes to your logger / Sentry
+
+            return response()->json(['message' => 'Failed to upload paper.'], 500);
         }
 
         // cache()->forget('paper-analytics');
         return response()->json(['message' => 'Paper uploaded successfully', 'data' => $paperUpload], 201);
+    }
+
+    private function cleanupFile(?string $path): void
+    {
+        if (! $path) {
+            return;
+        }
+
+        try {
+            Storage::disk(config('filesystems.default'))->delete($path);
+        } catch (Throwable $e) {
+            Log::warning('Failed to clean up orphaned upload', [
+                'path' => $path,
+                'error' => $e->getMessage(),
+            ]);
+        }
     }
 
     public function show(Request $request, $id)
@@ -254,35 +293,58 @@ class PaperController extends Controller
 
         Gate::authorize('update', $paperUpload);
 
-        $validated = $request->validated();
+        $user = $request->user();
+        $attributes = Arr::except($request->validated(), ['file']);
 
-        // If a new file is uploaded, handle the file storage
+        if ($user->role === 'campus_admin') {
+            abort_if(
+                $user->campus_id === null,
+                403,
+                'Your account is not assigned to a campus.'
+            );
+
+            abort_if(
+                isset($attributes['campus_id']) && (int) $attributes['campus_id'] !== (int) $user->campus_id,
+                403,
+                'You cant change what campus the paper belongs to.'
+            );
+
+            $attributes['campus_id'] = $user->campus_id;
+        }
+
+        $oldPath = $paperUpload->file_url;
+        $filedata = null;
+
+        // Store the new file first (outside the try: if this fails, there is nothing to clean up)
         if ($request->hasFile('file')) {
-            $file = $request->file('file');
-            $oldPath = $paperUpload->file_url;
-            $filedata = null;
+            $filedata = $uploader->storefile(
+                $request->file('file'),
+                $attributes['campus_id'],
+                $attributes['college_id'],
+                $attributes['program_id']
+            );
 
-            try {
-                $filedata = $uploader->storefile(
-                    $file,
-                    $validated['campus_id'],
-                    $validated['college_id'],
-                    $validated['program_id']
-                );
+            $attributes = [
+                ...$attributes,
+                ...Arr::only($filedata, ['file_url', 'original_filename', 'file_size']),
+            ];
+        }
 
-                $paperUpload->update(array_merge($validated, $filedata));
+        try {
+            $paperUpload->update($attributes);
+        } catch (Throwable $e) {
+            // DB update failed: remove the new file, keep the old one
+            $this->cleanupFile($filedata['file_url'] ?? null);
 
-                if ($oldPath && Storage::disk(config('filesystems.default'))->exists($oldPath)) {
-                    Storage::disk(config('filesystems.default'))->delete($oldPath);
-                }
-            } catch (\Exception $e) {
-                if ($filedata && Storage::disk(config('filesystems.default'))->exists($filedata['file_url'])) {
-                    Storage::disk(config('filesystems.default'))->delete($filedata['file_url']);
-                }
-            return response()->json(['message' => 'Failed to update paper', 'error' => $e->getMessage()], 500);
-            }
-        } else {
-            $paperUpload->update(array_merge($validated));
+            report($e);
+
+            return response()->json(['message' => 'Failed to update paper.'], 500);
+        }
+
+        // DB now points at the new file, so the old one is safe to remove.
+        // A failure here is only logged and doesn't fail the request.
+        if ($filedata) {
+            $this->cleanupFile($oldPath);
         }
 
         // cache()->forget('paper-analytics');
@@ -341,12 +403,7 @@ class PaperController extends Controller
     {   
         $paperUpload->load('campus.policy'); // Eager load the campus and its policy
 
-        $user = null;
-        if ($token = $request->bearerToken()) {
-            $accessToken = PersonalAccessToken::findToken($token);
-            $user = $accessToken?->tokenable;
-        }
-        if (Gate::forUser($user)->denies('viewMetadata', $paperUpload)) {
+        if (Gate::forUser($request->user('sanctum'))->denies('viewFile', $paperUpload)) {
             return response()->json(['message' => 'You are not allowed to view this file'], 403);
         }
 
