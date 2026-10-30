@@ -10,13 +10,18 @@ class PaperUploadPolicy
 {
     public function create(User $user): bool
     {
-        return in_array($user->role, ['super_admin', 'campus_admin']);
+        return in_array($user->role, ['super_admin', 'campus_admin'], true);
     }
 
     public function update(User $user, PaperUploads $paper): bool
     {
-        if ($user->role === 'super_admin') return true;
-        return $user->role === 'campus_admin' && $user->campus_id === $paper->campus_id;
+        if ($user->role === 'super_admin') {
+            return true;
+        }
+        
+        return $user->role === 'campus_admin' 
+            && $user->campus_id !== null
+            && (int) $user->campus_id === (int) $paper->campus_id;
     }
 
     public function delete(User $user, PaperUploads $paper): bool
@@ -57,7 +62,8 @@ class PaperUploadPolicy
         if ($user->role === 'student') {
             return match ($policy?->{$studentScopeField}) {
                 'all_campuses' => true,
-                'same_campus' => $user->campus_id === $paper->campus_id,
+                'same_campus' => $user->campus_id !== null
+                && (int) $user->campus_id === (int) $paper->campus_id,
                 default => false, // 'none' or missing policy
             };
         }
