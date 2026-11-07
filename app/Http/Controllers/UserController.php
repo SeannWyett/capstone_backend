@@ -7,6 +7,8 @@ use App\Models\User;
 use app\Models\Campus;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class UserController extends Controller
 {
@@ -99,15 +101,10 @@ class UserController extends Controller
             'name' => 'sometimes|required|string|max:255',
             'username' => 'sometimes|required|string|max:255|unique:users,username,' . $user->id,
             'email' => 'sometimes|nullable|email|unique:users,email,' . $user->id,
-            'password' => ['sometimes', 'required', 'confirmed', Password::min(8)],
             'role' => 'sometimes|required|in:student,campus_admin',
             'campus_id' => 'sometimes|required|exists:campuses,id',
             'status' => 'sometimes|required|in:active,inactive'
         ]);
-
-        if (isset($validated['password'])) {
-            $validated['password'] = Hash::make($validated['password']);
-        }
 
         $user->update($validated);
 
@@ -150,7 +147,10 @@ class UserController extends Controller
             'current_password' => ['required', 'string'],
             'name' => 'nullable|string|max:255',
             'username' => [
-                'required', 'string', 'max:255', 'unique:users,username',
+                'required', 
+                'string', 
+                'max:255', 
+                Rule::unique('users', 'username')->ignore($user->id),
                 'regex:/^[a-zA-Z0-9_.-]+$/',
                 function ($attribute, $value, $fail) {
                     if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
@@ -159,7 +159,9 @@ class UserController extends Controller
                 }
             ],
             'email' => [
-                'required', 'email', 'unique:users,email',
+                'required', 
+                'email', 
+                Rule::unique('users', 'email')->ignore($user->id),
                 'regex:/^[\w.+-]+@sorsu\.edu\.ph$/i',
             ],
             'password' => ['required', 'confirmed', Password::min(8)],
@@ -172,17 +174,20 @@ class UserController extends Controller
         if (Hash::check($validated['password'], $user->password)) {
             return response()->json(['message' => 'Your new password must be different from the temporary one.'], 422);
         }
+        
+        DB::transaction(function () use ($user, $validated, $request) {
+            $user->forcefill([
+                'name' => $validated['name'],
+                'username' => $validated['username'],
+                'email' => $validated['email'],
+                'password' => Hash::make($validated['password']),
+                'email_verified_at' => null,
+            ])->save();
 
-        $user->forcefill([
-            'name' => $validated['name'],
-            'username' => $validated['username'],
-            'email' => $validated['email'],
-            'password' => Hash::make($validated['password']),
-            'email_verified_at' => null,
-        ])->save();
-
-        $user->tokens()->where('id', '!=', $request->user()->currentAccessToken()->id)->delete();
-
+            $user->tokens()
+                ->where('id', '!=', $request->user()->currentAccessToken()->id)
+                ->delete();
+        });     
         $user->sendEmailVerificationNotification();
 
         return response()->json([
